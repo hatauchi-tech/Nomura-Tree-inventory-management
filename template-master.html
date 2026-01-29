@@ -1,0 +1,256 @@
+<div class="page-header">
+  <h2 class="page-title">マスター管理</h2>
+</div>
+
+<!-- タブ -->
+<div class="tabs">
+  <button class="tab active" onclick="Master.switchTab('woodTypes')">樹種</button>
+  <button class="tab" onclick="Master.switchTab('suppliers')">仕入れ先</button>
+  <button class="tab" onclick="Master.switchTab('processors')">加工業者</button>
+  <button class="tab" onclick="Master.switchTab('storageLocations')">保管場所</button>
+</div>
+
+<!-- 樹種マスター -->
+<div class="content-area tab-content active" id="tabWoodTypes">
+  <div class="action-bar">
+    <h3 class="form-section-title" style="margin-bottom: 0;">樹種マスター</h3>
+    <div class="action-bar-right">
+      <button class="btn btn-primary btn-sm" onclick="Master.addWoodType()">
+        ➕ 新規登録
+      </button>
+    </div>
+  </div>
+  <div class="table-container">
+    <table class="table" id="woodTypesTable">
+      <thead>
+        <tr>
+          <th>樹種ID</th>
+          <th>樹種名</th>
+          <th>表示順</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="woodTypesBody">
+        <tr>
+          <td colspan="4" class="text-muted text-center">データを読み込み中...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 仕入れ先マスター -->
+<div class="content-area tab-content hidden" id="tabSuppliers">
+  <div class="action-bar">
+    <h3 class="form-section-title" style="margin-bottom: 0;">仕入れ先マスター</h3>
+    <div class="action-bar-right">
+      <button class="btn btn-primary btn-sm" onclick="Master.addSupplier()">
+        ➕ 新規登録
+      </button>
+    </div>
+  </div>
+  <div class="table-container">
+    <table class="table" id="suppliersTable">
+      <thead>
+        <tr>
+          <th>仕入れ先ID</th>
+          <th>業者名</th>
+          <th>連絡先</th>
+          <th>住所</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="suppliersBody">
+        <tr>
+          <td colspan="5" class="text-muted text-center">データを読み込み中...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 加工業者マスター -->
+<div class="content-area tab-content hidden" id="tabProcessors">
+  <div class="action-bar">
+    <h3 class="form-section-title" style="margin-bottom: 0;">加工業者マスター</h3>
+    <div class="action-bar-right">
+      <button class="btn btn-primary btn-sm" onclick="Master.addProcessor()">
+        ➕ 新規登録
+      </button>
+    </div>
+  </div>
+  <div class="table-container">
+    <table class="table" id="processorsTable">
+      <thead>
+        <tr>
+          <th>加工業者ID</th>
+          <th>業者名</th>
+          <th>対応加工種別</th>
+          <th>連絡先</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="processorsBody">
+        <tr>
+          <td colspan="5" class="text-muted text-center">データを読み込み中...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 保管場所マスター -->
+<div class="content-area tab-content hidden" id="tabStorageLocations">
+  <div class="action-bar">
+    <h3 class="form-section-title" style="margin-bottom: 0;">保管場所マスター</h3>
+    <div class="action-bar-right">
+      <button class="btn btn-primary btn-sm" onclick="Master.addStorageLocation()">
+        ➕ 新規登録
+      </button>
+    </div>
+  </div>
+  <div class="table-container">
+    <table class="table" id="storageLocationsTable">
+      <thead>
+        <tr>
+          <th>保管場所ID</th>
+          <th>場所名</th>
+          <th>表示順</th>
+          <th>最終棚卸し日</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="storageLocationsBody">
+        <tr>
+          <td colspan="5" class="text-muted text-center">データを読み込み中...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 樹種追加・編集モーダル -->
+<div class="modal-overlay hidden" id="woodTypeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="woodTypeModalTitle">樹種を追加</h3>
+      <button class="modal-close" onclick="Master.closeWoodTypeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="woodTypeForm">
+        <input type="hidden" id="woodTypeEditId">
+        <div class="form-group">
+          <label class="form-label form-label-required">樹種名</label>
+          <input type="text" class="form-input" id="woodTypeName" required maxlength="50" placeholder="例: ウォルナット">
+        </div>
+        <div class="form-group">
+          <label class="form-label">表示順</label>
+          <input type="number" class="form-input" id="woodTypeDisplayOrder" min="1" max="999" placeholder="1〜999（空欄可）">
+          <p class="form-hint">数値が小さいほど上に表示されます</p>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Master.closeWoodTypeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="Master.submitWoodType()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 仕入れ先追加・編集モーダル -->
+<div class="modal-overlay hidden" id="supplierModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="supplierModalTitle">仕入れ先を追加</h3>
+      <button class="modal-close" onclick="Master.closeSupplierModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="supplierForm">
+        <input type="hidden" id="supplierEditId">
+        <div class="form-group">
+          <label class="form-label form-label-required">業者名</label>
+          <input type="text" class="form-input" id="supplierName" required maxlength="100" placeholder="例: 木材商会A">
+        </div>
+        <div class="form-group">
+          <label class="form-label">連絡先</label>
+          <input type="text" class="form-input" id="supplierContact" maxlength="100" placeholder="電話番号・メールアドレスなど">
+        </div>
+        <div class="form-group">
+          <label class="form-label">住所</label>
+          <textarea class="form-textarea" id="supplierAddress" rows="2" maxlength="200" placeholder="住所（任意）"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Master.closeSupplierModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="Master.submitSupplier()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 加工業者追加・編集モーダル -->
+<div class="modal-overlay hidden" id="processorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="processorModalTitle">加工業者を追加</h3>
+      <button class="modal-close" onclick="Master.closeProcessorModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="processorForm">
+        <input type="hidden" id="processorEditId">
+        <div class="form-group">
+          <label class="form-label form-label-required">業者名</label>
+          <input type="text" class="form-input" id="processorName" required maxlength="100" placeholder="例: 木工職人工房">
+        </div>
+        <div class="form-group">
+          <label class="form-label">対応加工種別</label>
+          <div class="checkbox-group" id="processorTypes">
+            <label class="checkbox-label"><input type="checkbox" value="カンナ"> カンナ</label>
+            <label class="checkbox-label"><input type="checkbox" value="乾燥"> 乾燥</label>
+            <label class="checkbox-label"><input type="checkbox" value="塗装"> 塗装</label>
+            <label class="checkbox-label"><input type="checkbox" value="脚取り付け"> 脚取り付け</label>
+            <label class="checkbox-label"><input type="checkbox" value="研磨"> 研磨</label>
+            <label class="checkbox-label"><input type="checkbox" value="補修"> 補修</label>
+            <label class="checkbox-label"><input type="checkbox" value="その他"> その他</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">連絡先</label>
+          <input type="text" class="form-input" id="processorContact" maxlength="100" placeholder="電話番号・メールアドレスなど">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Master.closeProcessorModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="Master.submitProcessor()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 保管場所追加・編集モーダル -->
+<div class="modal-overlay hidden" id="storageLocationModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="storageLocationModalTitle">保管場所を追加</h3>
+      <button class="modal-close" onclick="Master.closeStorageLocationModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="storageLocationForm">
+        <input type="hidden" id="storageLocationEditId">
+        <div class="form-group">
+          <label class="form-label form-label-required">場所名</label>
+          <input type="text" class="form-input" id="storageLocationName" required maxlength="100" placeholder="例: ショールーム">
+        </div>
+        <div class="form-group">
+          <label class="form-label">表示順</label>
+          <input type="number" class="form-input" id="storageLocationDisplayOrder" min="1" max="999" placeholder="1〜999（空欄可）">
+          <p class="form-hint">数値が小さいほど上に表示されます</p>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Master.closeStorageLocationModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="Master.submitStorageLocation()">保存</button>
+    </div>
+  </div>
+</div>

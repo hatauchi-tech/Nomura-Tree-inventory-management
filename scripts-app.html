@@ -1,0 +1,2489 @@
+<script>
+/**
+ * メインアプリケーション
+ */
+
+const App = {
+  currentPage: 'dashboard',
+  masterData: {
+    woodTypes: [],
+    suppliers: [],
+    processors: [],
+    storageLocations: [],
+  },
+
+  /**
+   * 初期化
+   */
+  async init() {
+    console.log('App initializing...');
+
+    // ナビゲーションのイベント設定
+    this.setupNavigation();
+
+    // マスターデータの読み込み
+    await this.loadMasterData();
+
+    // 初期ページの表示
+    this.navigateTo('dashboard');
+
+    console.log('App initialized');
+  },
+
+  /**
+   * ナビゲーション設定
+   */
+  setupNavigation() {
+    // サイドバーナビゲーション
+    document.querySelectorAll('.nav-link').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const page = link.dataset.page;
+        App.navigateTo(page);
+        App.closeSidebar();
+      });
+    });
+
+    // モバイルナビゲーション
+    document.querySelectorAll('.mobile-nav-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const page = item.dataset.page;
+        App.navigateTo(page);
+      });
+    });
+
+    // メニュートグル
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) {
+      menuToggle.addEventListener('click', function() {
+        App.toggleSidebar();
+      });
+    }
+  },
+
+  /**
+   * サイドバーを開閉
+   */
+  toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      sidebar.classList.toggle('open');
+    }
+  },
+
+  /**
+   * サイドバーを閉じる
+   */
+  closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      sidebar.classList.remove('open');
+    }
+  },
+
+  /**
+   * ページ遷移
+   */
+  navigateTo(page, params = {}) {
+    console.log(`Navigating to: ${page}`, params);
+
+    // 現在のページを非表示
+    document.querySelectorAll('.page').forEach((p) => {
+      p.classList.add('hidden');
+    });
+
+    // 新しいページを表示（product-editはproduct-newを再利用）
+    const pageId = page === 'product-edit' ? 'product-new' : page;
+    const pageElement = document.getElementById(`page-${pageId}`);
+    if (pageElement) {
+      pageElement.classList.remove('hidden');
+    }
+
+    // ナビゲーションのアクティブ状態を更新
+    document.querySelectorAll('.nav-link, .mobile-nav-item').forEach((link) => {
+      link.classList.remove('active');
+      if (link.dataset.page === page || (page === 'product-edit' && link.dataset.page === 'product-new')) {
+        link.classList.add('active');
+      }
+    });
+
+    // ページ固有の初期化処理
+    this.initPage(page, params);
+
+    this.currentPage = page;
+  },
+
+  /**
+   * ページ固有の初期化
+   */
+  async initPage(page, params) {
+    switch (page) {
+      case 'dashboard':
+        await Dashboard.init();
+        break;
+      case 'products':
+        await ProductList.init();
+        break;
+      case 'product-new':
+        await ProductForm.init();
+        break;
+      case 'product-edit':
+        // 製品編集は製品登録フォームを再利用（編集モード）
+        await ProductForm.init(params.productId);
+        break;
+      case 'product-detail':
+        await ProductDetail.init(params.productId);
+        break;
+      case 'inventory':
+        await Inventory.init();
+        break;
+      case 'masters':
+        await Master.init();
+        break;
+      case 'sales':
+        await SalesList.init();
+        break;
+      case 'reports':
+        await Reports.init();
+        break;
+    }
+  },
+
+  /**
+   * マスターデータを読み込み
+   */
+  async loadMasterData() {
+    try {
+      // 並列でマスターデータを取得
+      const [woodTypes, suppliers, processors, storageLocations] = await Promise.all([
+        Api.getWoodTypes().catch(() => []),
+        Api.getSuppliers().catch(() => []),
+        Api.getProcessors().catch(() => []),
+        Api.getStorageLocations().catch(() => []),
+      ]);
+
+      this.masterData = {
+        woodTypes: woodTypes || [],
+        suppliers: suppliers || [],
+        processors: processors || [],
+        storageLocations: storageLocations || [],
+      };
+
+      console.log('Master data loaded:', this.masterData);
+    } catch (error) {
+      console.error('Failed to load master data:', error);
+      // フォールバックとして空の配列を設定
+      this.masterData = {
+        woodTypes: [],
+        suppliers: [],
+        processors: [],
+        storageLocations: [],
+      };
+      Toast.error('マスターデータの読み込みに失敗しました');
+    }
+  },
+
+  /**
+   * セレクトボックスにオプションを設定
+   */
+  populateSelect(selectId, items, valueKey, labelKey, placeholder = '選択してください') {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    select.innerHTML = `<option value="">${placeholder}</option>`;
+    items.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item[valueKey];
+      option.textContent = item[labelKey];
+      select.appendChild(option);
+    });
+  },
+
+  /**
+   * IDからマスタデータの名称を取得するヘルパー
+   */
+  getStorageLocationName(id) {
+    if (!id) return '-';
+    const item = this.masterData.storageLocations.find(l => l.storageLocationId === id);
+    return item?.name || id;
+  },
+
+  getSupplierName(id) {
+    if (!id) return '-';
+    const item = this.masterData.suppliers.find(s => s.supplierId === id);
+    return item?.name || id;
+  },
+
+  getProcessorName(id) {
+    if (!id) return '-';
+    const item = this.masterData.processors.find(p => p.processorId === id);
+    return item?.name || id;
+  },
+
+  getWoodTypeName(id) {
+    if (!id) return '-';
+    const item = this.masterData.woodTypes.find(w => w.woodTypeId === id || w.name === id);
+    return item?.name || id;
+  },
+};
+
+/**
+ * ダッシュボード
+ */
+const Dashboard = {
+  startDate: null,
+  endDate: null,
+  periodLabel: '今月',
+
+  async init() {
+    // 初期期間を今月に設定
+    this.setThisMonth();
+    await this.loadData();
+  },
+
+  async refresh() {
+    await this.loadData();
+  },
+
+  async loadData() {
+    try {
+      Loading.show();
+
+      // 並列でデータ取得
+      const [inventoryStats, salesStats, recentProducts] = await Promise.all([
+        Api.call('getDashboardStats'),
+        Api.call('getSalesStats', this.startDate ? this.startDate.toISOString() : null, this.endDate ? this.endDate.toISOString() : null),
+        Api.getProducts({}, { page: 1, limit: 6 }),
+      ]);
+
+      // 在庫指標を表示
+      this.renderInventoryStats(inventoryStats);
+
+      // 販売指標を表示
+      this.renderSalesStats(salesStats);
+
+      // 最近の製品を表示
+      this.renderRecentProducts(recentProducts?.data || []);
+
+      // アラートを表示
+      this.renderAlerts(inventoryStats);
+
+    } catch (error) {
+      console.error('Dashboard load error:', error);
+      Toast.error('データの読み込みに失敗しました');
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  renderInventoryStats(stats) {
+    if (!stats) return;
+    document.getElementById('statTotalInventory').textContent = stats.totalProducts || 0;
+    document.getElementById('statAvailableProducts').textContent = stats.availableProducts || 0;
+    document.getElementById('statInventoryValue').textContent = Utils.formatCurrency(stats.totalInventoryValue || 0);
+    document.getElementById('statLowStock').textContent = stats.lowStockItems || 0;
+  },
+
+  renderSalesStats(stats) {
+    if (!stats) {
+      document.getElementById('statTotalSalesCount').textContent = '0';
+      document.getElementById('statSoldProducts').textContent = '0';
+      document.getElementById('statSalesRevenue').textContent = Utils.formatCurrency(0);
+      document.getElementById('statSalesProfit').textContent = Utils.formatCurrency(0);
+      return;
+    }
+    document.getElementById('statTotalSalesCount').textContent = stats.totalSales || 0;
+    document.getElementById('statSoldProducts').textContent = stats.totalSales || 0;
+    document.getElementById('statSalesRevenue').textContent = Utils.formatCurrency(stats.totalRevenue || 0);
+    document.getElementById('statSalesProfit').textContent = Utils.formatCurrency(stats.totalProfit || 0);
+
+    // 期間ラベルを更新
+    const labelEl = document.getElementById('salesPeriodLabel');
+    if (labelEl) {
+      labelEl.textContent = `（${this.periodLabel}）`;
+    }
+  },
+
+  renderAlerts(stats) {
+    const container = document.getElementById('alertsContainer');
+    const alerts = [];
+
+    if (stats && stats.lowStockItems > 0) {
+      alerts.push({
+        type: 'warning',
+        message: `90日以上在庫がある製品が ${stats.lowStockItems} 件あります。`,
+      });
+    }
+
+    if (alerts.length === 0) {
+      container.innerHTML = '<p class="text-muted">アラートはありません。</p>';
+      return;
+    }
+
+    container.innerHTML = alerts.map(alert => `
+      <div class="card mb-sm" style="border-left: 4px solid ${alert.type === 'warning' ? 'var(--color-warning)' : 'var(--color-error)'};">
+        <div class="card-body">
+          <p class="mb-0">${Utils.escapeHtml(alert.message)}</p>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  renderRecentProducts(products) {
+    var grid = document.getElementById('recentProductsGrid');
+
+    if (!products || products.length === 0) {
+      grid.innerHTML = '<p class="text-muted">製品がありません。</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < products.length; i++) {
+      var p = products[i];
+      html += '<div class="card product-card" onclick="App.navigateTo(\'product-detail\', { productId: \'' + p.productId + '\' })">';
+      if (p.rawPhotoUrl) {
+        html += '<img class="product-card-image" src="' + Utils.escapeHtml(p.rawPhotoUrl) + '" alt="' + Utils.escapeHtml(p.productName) + '" onerror="this.style.display=\'none\'">';
+      } else {
+        html += '<div class="product-card-placeholder">📷</div>';
+      }
+      html += '<div class="product-card-content">';
+      html += '<div class="product-card-name">' + Utils.escapeHtml(p.productName) + '</div>';
+      html += '<div class="product-card-info">' + Utils.escapeHtml(p.woodType) + '</div>';
+      html += '<div class="product-card-price">' + Utils.formatCurrency(p.sellingPriceIncTax || 0) + '</div>';
+      html += '</div>';
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+  },
+
+  // 期間設定メソッド
+  onPeriodChange() {
+    const period = document.getElementById('dashboardPeriod').value;
+    const customRange = document.getElementById('customDateRange');
+
+    if (period === 'custom') {
+      customRange.classList.remove('hidden');
+      return;
+    }
+
+    customRange.classList.add('hidden');
+
+    switch (period) {
+      case 'all':
+        this.setAllPeriod();
+        break;
+      case 'thisMonth':
+        this.setThisMonth();
+        break;
+      case 'lastMonth':
+        this.setLastMonth();
+        break;
+      case 'thisYear':
+        this.setThisYear();
+        break;
+    }
+
+    this.loadData();
+  },
+
+  setAllPeriod() {
+    this.startDate = null;
+    this.endDate = null;
+    this.periodLabel = '全期間';
+  },
+
+  setThisMonth() {
+    const now = new Date();
+    this.startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    this.endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    this.periodLabel = '今月';
+  },
+
+  setLastMonth() {
+    const now = new Date();
+    this.startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    this.endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    this.periodLabel = '先月';
+  },
+
+  setThisYear() {
+    const now = new Date();
+    this.startDate = new Date(now.getFullYear(), 0, 1);
+    this.endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+    this.periodLabel = '今年';
+  },
+
+  applyCustomDateRange() {
+    const startInput = document.getElementById('dashboardStartDate').value;
+    const endInput = document.getElementById('dashboardEndDate').value;
+
+    if (!startInput || !endInput) {
+      Toast.warning('開始日と終了日を入力してください');
+      return;
+    }
+
+    this.startDate = new Date(startInput);
+    this.endDate = new Date(endInput + 'T23:59:59');
+
+    if (this.startDate > this.endDate) {
+      Toast.warning('開始日は終了日より前にしてください');
+      return;
+    }
+
+    this.periodLabel = `${startInput} 〜 ${endInput}`;
+    this.loadData();
+  },
+};
+
+/**
+ * 製品一覧
+ */
+const ProductList = {
+  products: [],
+  currentPage: 1,
+  limit: 20,
+  total: 0,
+
+  async init() {
+    this.setupEventListeners();
+    await this.loadProducts();
+  },
+
+  setupEventListeners() {
+    const searchInput = document.getElementById('searchKeyword');
+    if (searchInput) {
+      searchInput.addEventListener(
+        'input',
+        Utils.debounce(function() { ProductList.loadProducts(); }, 300)
+      );
+    }
+
+    const filterStatus = document.getElementById('filterStatus');
+    if (filterStatus) {
+      filterStatus.addEventListener('change', function() { ProductList.loadProducts(); });
+    }
+
+    const filterCategory = document.getElementById('filterCategory');
+    if (filterCategory) {
+      filterCategory.addEventListener('change', function() { ProductList.loadProducts(); });
+    }
+  },
+
+  async loadProducts() {
+    try {
+      Loading.show();
+
+      // 検索条件を取得
+      const keyword = document.getElementById('searchKeyword')?.value || '';
+      const status = document.getElementById('filterStatus')?.value || '';
+      const category = document.getElementById('filterCategory')?.value || '';
+
+      const conditions = {};
+      if (keyword) conditions.keyword = keyword;
+      if (status) conditions.statuses = [status];
+      if (category) conditions.majorCategories = [category];
+
+      console.log('loadProducts: conditions=', conditions);
+      const result = await Api.getProducts(conditions, { page: this.currentPage, limit: this.limit });
+      console.log('loadProducts: result=', result);
+
+      this.products = result?.data || [];
+      this.total = result?.total || this.products.length;
+      this.renderProducts();
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      Toast.error('製品一覧の取得に失敗しました: ' + (error.message || error));
+      this.products = [];
+      this.total = 0;
+      this.renderProducts();
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  renderProducts() {
+    const grid = document.getElementById('productGrid');
+    const countEl = document.getElementById('productCount');
+
+    if (this.products.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📦</div>
+          <div class="empty-state-title">製品が見つかりません</div>
+          <div class="empty-state-text">検索条件を変更してください。</div>
+        </div>
+      `;
+      countEl.textContent = '0 件の製品';
+      return;
+    }
+
+    countEl.textContent = `${this.total} 件の製品`;
+
+    var html = '';
+    for (var i = 0; i < this.products.length; i++) {
+      var p = this.products[i];
+      var photoUrl = this.convertDriveUrl(p.rawPhotoUrl);
+      html += '<div class="card product-card" onclick="App.navigateTo(\'product-detail\', { productId: \'' + p.productId + '\' })">';
+      if (photoUrl) {
+        html += '<img class="product-card-image" src="' + Utils.escapeHtml(photoUrl) + '" alt="' + Utils.escapeHtml(p.productName) + '" onerror="this.style.display=\'none\'">';
+      } else {
+        html += '<div class="product-card-placeholder">📷</div>';
+      }
+      html += '<div class="product-card-content">';
+      html += '<div class="product-card-name">' + Utils.escapeHtml(p.productName) + '</div>';
+      html += '<div class="product-card-info">';
+      html += Utils.escapeHtml(p.woodType) + ' / ' + Utils.escapeHtml(p.majorCategory);
+      html += ' <span class="badge ' + Utils.getStatusClass(p.status) + '" style="margin-left: 8px;">' + p.status + '</span>';
+      html += '</div>';
+      html += '<div class="product-card-price">' + Utils.formatCurrency(p.sellingPriceIncTax || p.price) + '</div>';
+      html += '</div>';
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+  },
+
+  resetFilters() {
+    document.getElementById('searchKeyword').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterCategory').value = '';
+    this.loadProducts();
+  },
+
+  // Google Drive URLを変換
+  convertDriveUrl(url) {
+    if (!url) return null;
+    const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch) {
+      const fileId = fileIdMatch[1] || fileIdMatch[2];
+      return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+    }
+    return url;
+  },
+};
+
+/**
+ * 製品フォーム
+ */
+const ProductForm = {
+  isEditMode: false,
+  editProductId: null,
+  processingCosts: [], // 加工費リスト
+  processingCostIdCounter: 0, // 一時ID用カウンター
+
+  async init(productId = null) {
+    this.isEditMode = !!productId;
+    this.editProductId = productId;
+    this.processingCosts = [];
+    this.processingCostIdCounter = 0;
+
+    // タイトルを更新
+    const titleEl = document.getElementById('formTitle');
+    if (titleEl) {
+      titleEl.textContent = this.isEditMode ? '製品編集' : '製品登録';
+    }
+
+    // セレクトボックスを初期化
+    App.populateSelect('woodType', App.masterData.woodTypes, 'woodTypeId', 'name');
+    App.populateSelect('supplierId', App.masterData.suppliers, 'supplierId', 'name');
+    App.populateSelect('storageLocationId', App.masterData.storageLocations, 'storageLocationId', 'name');
+
+    // フォームをリセット
+    document.getElementById('productForm').reset();
+
+    // 加工費リストをクリア
+    this.renderProcessingCostsList();
+
+    // 今日の日付を設定（新規登録時のみ）
+    if (!this.isEditMode) {
+      document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('profitMargin').value = '60';
+      document.getElementById('priceAdjustment').value = '0';
+    }
+
+    // 写真プレビューをリセット
+    this.clearPhotoPreview('rawPhotoPreview');
+    this.clearPhotoPreview('finishedPhotoPreview');
+    this.setupPhotoPreview();
+
+    // フォーム送信イベント
+    const form = document.getElementById('productForm');
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      ProductForm.submit();
+      return false;
+    };
+
+    // 価格プレビュー更新
+    this.setupPricePreview();
+
+    // 編集モードの場合は既存データを読み込み
+    if (this.isEditMode) {
+      await this.loadProductForEdit(productId);
+    }
+
+    // 初期プレビュー更新
+    this.updatePricePreview();
+  },
+
+  async loadProductForEdit(productId) {
+    try {
+      Loading.show();
+      const product = await Api.getProduct(productId);
+
+      if (!product) {
+        Toast.error('製品が見つかりません');
+        App.navigateTo('products');
+        return;
+      }
+
+      // フォームにデータを設定
+      document.getElementById('majorCategory').value = product.majorCategory || '';
+      document.getElementById('minorCategory').value = product.minorCategory || '';
+      document.getElementById('productName').value = product.productName || '';
+      document.getElementById('woodType').value = product.woodType || '';
+      document.getElementById('storageLocationId').value = product.storageLocationId || '';
+
+      // サイズ情報
+      document.getElementById('rawLength').value = product.rawLength || '';
+      document.getElementById('rawWidth').value = product.rawWidth || '';
+      document.getElementById('rawThickness').value = product.rawThickness || '';
+      document.getElementById('finishedLength').value = product.finishedLength || '';
+      document.getElementById('finishedWidth').value = product.finishedWidth || '';
+      document.getElementById('finishedThickness').value = product.finishedThickness || '';
+
+      // 仕入れ情報
+      document.getElementById('supplierId').value = product.supplierId || '';
+      if (product.purchaseDate) {
+        const date = new Date(product.purchaseDate);
+        document.getElementById('purchaseDate').value = date.toISOString().split('T')[0];
+      }
+      document.getElementById('purchasePrice').value = product.purchasePrice || '';
+
+      // 価格設定
+      document.getElementById('shippingCost').value = product.shippingCost || '';
+      document.getElementById('profitMargin').value = product.profitMargin || '60';
+      document.getElementById('priceAdjustment').value = product.priceAdjustment || '0';
+
+      // 備考
+      document.getElementById('remarks').value = product.remarks || '';
+
+      // 写真URL
+      if (product.rawPhotoUrls) {
+        const rawUrl = this.convertDriveUrl(product.rawPhotoUrls);
+        document.getElementById('rawPhotoUrl').value = product.rawPhotoUrls;
+        this.updatePhotoPreview('rawPhotoPreview', rawUrl);
+        document.getElementById('rawPhotoRemoveBtn').classList.remove('hidden');
+      }
+      if (product.finishedPhotoUrls) {
+        const finishedUrl = this.convertDriveUrl(product.finishedPhotoUrls);
+        document.getElementById('finishedPhotoUrl').value = product.finishedPhotoUrls;
+        this.updatePhotoPreview('finishedPhotoPreview', finishedUrl);
+        document.getElementById('finishedPhotoRemoveBtn').classList.remove('hidden');
+      }
+
+      // 加工費を読み込み
+      try {
+        const costResult = await Api.getProcessingCosts(productId);
+        if (costResult?.costs && costResult.costs.length > 0) {
+          this.processingCosts = costResult.costs.map(cost => ({
+            tempId: ++this.processingCostIdCounter,
+            existingId: cost.processingCostId,
+            processingType: cost.processingType,
+            processorId: cost.processorId,
+            processingContent: cost.processingContent || '',
+            amount: cost.amount || 0,
+          }));
+          this.renderProcessingCostsList();
+        }
+      } catch (e) {
+        console.error('Failed to load processing costs:', e);
+      }
+
+      // プレビュー更新
+      this.updatePricePreview();
+    } catch (error) {
+      console.error('Failed to load product for edit:', error);
+      Toast.error('製品データの読み込みに失敗しました');
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  setupPricePreview() {
+    const fields = ['purchasePrice', 'shippingCost', 'profitMargin', 'priceAdjustment'];
+    fields.forEach(function(field) {
+      const input = document.getElementById(field);
+      if (input) {
+        input.oninput = function() { ProductForm.updatePricePreview(); };
+      }
+    });
+  },
+
+  // 写真プレビュー設定（初期化用）
+  setupPhotoPreview() {
+    // 削除ボタンを非表示にリセット
+    const rawRemoveBtn = document.getElementById('rawPhotoRemoveBtn');
+    const finishedRemoveBtn = document.getElementById('finishedPhotoRemoveBtn');
+    if (rawRemoveBtn) rawRemoveBtn.classList.add('hidden');
+    if (finishedRemoveBtn) finishedRemoveBtn.classList.add('hidden');
+  },
+
+  // Google Drive URLを画像URLに変換
+  convertDriveUrl(url) {
+    if (!url) return null;
+    // Google Drive共有リンクを直接表示用に変換
+    // 形式1: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+    // 形式2: https://drive.google.com/open?id=FILE_ID
+    const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch) {
+      const fileId = fileIdMatch[1] || fileIdMatch[2];
+      return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+    }
+    // 既に直接URLの場合はそのまま返す
+    return url;
+  },
+
+  // 写真プレビューを更新
+  updatePhotoPreview(containerId, url) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (url) {
+      container.innerHTML = '<img src="' + Utils.escapeHtml(url) + '" alt="プレビュー" onerror="ProductForm.handlePhotoError(this, \'' + containerId + '\')">';
+    } else {
+      this.clearPhotoPreview(containerId);
+    }
+  },
+
+  // 写真プレビューをクリア
+  clearPhotoPreview(containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = '<div class="photo-preview-placeholder">プレビュー</div>';
+    }
+  },
+
+  // 写真読み込みエラー時の処理
+  handlePhotoError(img, containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = '<div class="photo-preview-placeholder">読み込みエラー</div>';
+    }
+  },
+
+  // ファイル選択時の処理（ファイル選択・カメラ撮影共通）
+  async handleFileSelect(type, file) {
+    if (!file) return;
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    // バリデーション
+    if (!allowedTypes.includes(file.type)) {
+      Toast.error('対応していないファイル形式です。JPEG、PNG、WebPのみ対応しています。');
+      return;
+    }
+
+    if (file.size > maxSize) {
+      Toast.error('ファイルサイズが大きすぎます。5MB以下にしてください。');
+      return;
+    }
+
+    const previewId = type === 'raw' ? 'rawPhotoPreview' : 'finishedPhotoPreview';
+    const urlInputId = type === 'raw' ? 'rawPhotoUrl' : 'finishedPhotoUrl';
+    const uploadingId = type === 'raw' ? 'rawPhotoUploading' : 'finishedPhotoUploading';
+    const removeBtnId = type === 'raw' ? 'rawPhotoRemoveBtn' : 'finishedPhotoRemoveBtn';
+
+    try {
+      document.getElementById(uploadingId).classList.remove('hidden');
+
+      // ファイルをBase64に変換
+      const base64Data = await this.fileToBase64(file);
+
+      // サーバーにアップロード
+      const result = await Api.call('uploadProductPhoto', base64Data, file.name, file.type);
+
+      if (result && result.url) {
+        // URLを保存
+        document.getElementById(urlInputId).value = result.url;
+
+        // プレビューを更新
+        const thumbnailUrl = this.convertDriveUrl(result.url);
+        this.updatePhotoPreview(previewId, thumbnailUrl);
+
+        // 削除ボタンを表示
+        document.getElementById(removeBtnId).classList.remove('hidden');
+
+        Toast.success('写真をアップロードしました');
+      } else {
+        Toast.error('アップロードに失敗しました');
+      }
+    } catch (error) {
+      console.error('File upload error:', error);
+      Toast.error('アップロード中にエラーが発生しました: ' + (error.message || ''));
+    } finally {
+      document.getElementById(uploadingId).classList.add('hidden');
+      // ファイル入力をクリア
+      var fileInput = document.getElementById(type + 'PhotoFile');
+      var cameraInput = document.getElementById(type + 'PhotoCamera');
+      if (fileInput) fileInput.value = '';
+      if (cameraInput) cameraInput.value = '';
+    }
+  },
+
+  // 写真を削除
+  removePhoto(type) {
+    const previewId = type === 'raw' ? 'rawPhotoPreview' : 'finishedPhotoPreview';
+    const urlInputId = type === 'raw' ? 'rawPhotoUrl' : 'finishedPhotoUrl';
+    const removeBtnId = type === 'raw' ? 'rawPhotoRemoveBtn' : 'finishedPhotoRemoveBtn';
+
+    // URLをクリア
+    document.getElementById(urlInputId).value = '';
+
+    // プレビューをクリア
+    this.clearPhotoPreview(previewId);
+
+    // 削除ボタンを非表示
+    document.getElementById(removeBtnId).classList.add('hidden');
+
+    Toast.info('写真を削除しました');
+  },
+
+  // ファイルをBase64に変換
+  fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Data URLから「data:image/xxx;base64,」部分を除去
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  },
+
+  updatePricePreview() {
+    const purchasePrice = parseFloat(document.getElementById('purchasePrice')?.value) || 0;
+    const shippingCost = parseFloat(document.getElementById('shippingCost')?.value) || 0;
+    const profitMargin = parseFloat(document.getElementById('profitMargin')?.value) || 60;
+    const priceAdjustment = parseFloat(document.getElementById('priceAdjustment')?.value) || 0;
+
+    // 加工費合計を計算
+    const processingCostTotal = this.getProcessingCostsTotal();
+
+    // トータル原価
+    const totalCost = purchasePrice + processingCostTotal + shippingCost;
+
+    // 目安販売価格（利益率が100%の場合はエラー回避）
+    const marginRate = Math.min(profitMargin, 99) / 100;
+    const suggestedPrice = marginRate < 1 ? Math.round(totalCost / (1 - marginRate)) : totalCost;
+
+    // 販売価格（税抜）
+    const priceExTax = suggestedPrice + priceAdjustment;
+
+    // 販売価格（税込）
+    const priceIncTax = Math.round(priceExTax * 1.1);
+
+    // プレビュー更新
+    const setPreview = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setPreview('previewPurchasePrice', Utils.formatCurrency(purchasePrice));
+    setPreview('previewProcessingCost', Utils.formatCurrency(processingCostTotal));
+    setPreview('previewShippingCost', Utils.formatCurrency(shippingCost));
+    setPreview('previewTotalCost', Utils.formatCurrency(totalCost));
+    setPreview('previewSuggestedPrice', Utils.formatCurrency(suggestedPrice));
+    setPreview('previewPriceAdjustment', Utils.formatCurrency(priceAdjustment));
+    setPreview('previewPriceExTax', Utils.formatCurrency(priceExTax));
+    setPreview('previewPriceIncTax', Utils.formatCurrency(priceIncTax));
+  },
+
+  // 加工費合計を取得
+  getProcessingCostsTotal() {
+    return this.processingCosts.reduce((sum, cost) => sum + (cost.amount || 0), 0);
+  },
+
+  // 加工費行を追加
+  addProcessingCostRow() {
+    const tempId = ++this.processingCostIdCounter;
+    this.processingCosts.push({
+      tempId,
+      existingId: null,
+      processingType: '',
+      processorId: '',
+      processingContent: '',
+      amount: 0,
+    });
+    this.renderProcessingCostsList();
+  },
+
+  // 加工費行を削除
+  removeProcessingCostRow(tempId) {
+    this.processingCosts = this.processingCosts.filter(c => c.tempId !== tempId);
+    this.renderProcessingCostsList();
+    this.updatePricePreview();
+  },
+
+  // 加工費リストを描画
+  renderProcessingCostsList() {
+    var container = document.getElementById('processingCostsList');
+    if (!container) return;
+
+    if (this.processingCosts.length === 0) {
+      container.innerHTML = '<p class="text-muted">加工費は登録されていません。</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < this.processingCosts.length; i++) {
+      var cost = this.processingCosts[i];
+      html += '<div class="card mb-md" style="padding: var(--spacing-md);">';
+      html += '<div class="form-row form-row-2">';
+      html += '<div class="form-group">';
+      html += '<label class="form-label">加工種別</label>';
+      html += '<select class="form-select" onchange="ProductForm.updateProcessingCost(' + cost.tempId + ', \'processingType\', this.value)">';
+      html += '<option value="">選択してください</option>';
+      html += '<option value="カンナ"' + (cost.processingType === 'カンナ' ? ' selected' : '') + '>カンナ</option>';
+      html += '<option value="乾燥"' + (cost.processingType === '乾燥' ? ' selected' : '') + '>乾燥</option>';
+      html += '<option value="塗装"' + (cost.processingType === '塗装' ? ' selected' : '') + '>塗装</option>';
+      html += '<option value="脚取り付け"' + (cost.processingType === '脚取り付け' ? ' selected' : '') + '>脚取り付け</option>';
+      html += '<option value="研磨"' + (cost.processingType === '研磨' ? ' selected' : '') + '>研磨</option>';
+      html += '<option value="補修"' + (cost.processingType === '補修' ? ' selected' : '') + '>補修</option>';
+      html += '<option value="木材加工"' + (cost.processingType === '木材加工' ? ' selected' : '') + '>木材加工</option>';
+      html += '<option value="その他"' + (cost.processingType === 'その他' ? ' selected' : '') + '>その他</option>';
+      html += '</select>';
+      html += '</div>';
+      html += '<div class="form-group">';
+      html += '<label class="form-label">加工業者</label>';
+      html += '<select class="form-select" onchange="ProductForm.updateProcessingCost(' + cost.tempId + ', \'processorId\', this.value)">';
+      html += '<option value="">選択してください</option>';
+      for (var j = 0; j < App.masterData.processors.length; j++) {
+        var p = App.masterData.processors[j];
+        html += '<option value="' + p.processorId + '"' + (cost.processorId === p.processorId ? ' selected' : '') + '>' + Utils.escapeHtml(p.name) + '</option>';
+      }
+      html += '</select>';
+      html += '</div>';
+      html += '</div>';
+      html += '<div class="form-row form-row-2">';
+      html += '<div class="form-group">';
+      html += '<label class="form-label">加工内容</label>';
+      html += '<input type="text" class="form-input" value="' + Utils.escapeHtml(cost.processingContent || '') + '" onchange="ProductForm.updateProcessingCost(' + cost.tempId + ', \'processingContent\', this.value)" placeholder="任意">';
+      html += '</div>';
+      html += '<div class="form-group">';
+      html += '<label class="form-label">金額（税抜）</label>';
+      html += '<div class="flex gap-sm">';
+      html += '<input type="number" class="form-input" value="' + (cost.amount || '') + '" min="0" max="99999999" onchange="ProductForm.updateProcessingCost(' + cost.tempId + ', \'amount\', parseInt(this.value) || 0)" placeholder="円">';
+      html += '<button type="button" class="btn btn-danger btn-sm" onclick="ProductForm.removeProcessingCostRow(' + cost.tempId + ')">削除</button>';
+      html += '</div>';
+      html += '</div>';
+      html += '</div>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  },
+
+  // 加工費データを更新
+  updateProcessingCost(tempId, field, value) {
+    const cost = this.processingCosts.find(c => c.tempId === tempId);
+    if (cost) {
+      cost[field] = value;
+      if (field === 'amount') {
+        this.updatePricePreview();
+      }
+    }
+  },
+
+  collectFormData() {
+    // サイズ情報を取得（空の場合はundefined）
+    const rawLength = document.getElementById('rawLength').value;
+    const rawWidth = document.getElementById('rawWidth').value;
+    const rawThickness = document.getElementById('rawThickness').value;
+    const finishedLength = document.getElementById('finishedLength').value;
+    const finishedWidth = document.getElementById('finishedWidth').value;
+    const finishedThickness = document.getElementById('finishedThickness').value;
+
+    const rawSize = (rawLength || rawWidth || rawThickness) ? {
+      length: rawLength ? parseInt(rawLength) : undefined,
+      width: rawWidth ? parseInt(rawWidth) : undefined,
+      thickness: rawThickness ? parseInt(rawThickness) : undefined,
+    } : undefined;
+
+    const finishedSize = (finishedLength || finishedWidth || finishedThickness) ? {
+      length: finishedLength ? parseInt(finishedLength) : undefined,
+      width: finishedWidth ? parseInt(finishedWidth) : undefined,
+      thickness: finishedThickness ? parseInt(finishedThickness) : undefined,
+    } : undefined;
+
+    // 写真URL
+    const rawPhotoUrl = document.getElementById('rawPhotoUrl')?.value.trim() || undefined;
+    const finishedPhotoUrl = document.getElementById('finishedPhotoUrl')?.value.trim() || undefined;
+
+    // フォームデータを収集
+    return {
+      majorCategory: document.getElementById('majorCategory').value,
+      minorCategory: document.getElementById('minorCategory').value || undefined,
+      productName: document.getElementById('productName').value.trim(),
+      woodType: document.getElementById('woodType').value,
+      rawSize: rawSize,
+      finishedSize: finishedSize,
+      rawPhotoUrls: rawPhotoUrl,
+      finishedPhotoUrls: finishedPhotoUrl,
+      supplierId: document.getElementById('supplierId').value,
+      purchaseDate: new Date(document.getElementById('purchaseDate').value),
+      purchasePrice: parseInt(document.getElementById('purchasePrice').value) || 0,
+      storageLocationId: document.getElementById('storageLocationId').value,
+      shippingCost: parseInt(document.getElementById('shippingCost').value) || undefined,
+      profitMargin: parseFloat(document.getElementById('profitMargin').value) || 60,
+      priceAdjustment: parseInt(document.getElementById('priceAdjustment').value) || 0,
+      remarks: document.getElementById('remarks').value.trim() || undefined,
+    };
+  },
+
+  validateFormData(data) {
+    const errors = [];
+
+    if (!data.majorCategory) {
+      errors.push('大分類を選択してください');
+    }
+
+    if (!data.productName || data.productName.length < 1) {
+      errors.push('商品名を入力してください');
+    } else if (data.productName.length > 100) {
+      errors.push('商品名は100文字以内で入力してください');
+    }
+
+    if (!data.woodType) {
+      errors.push('樹種を選択してください');
+    }
+
+    if (!data.supplierId) {
+      errors.push('仕入れ先を選択してください');
+    }
+
+    if (!data.purchaseDate) {
+      errors.push('仕入れ日を入力してください');
+    }
+
+    if (data.purchasePrice < 0 || data.purchasePrice > 99999999) {
+      errors.push('入荷単価は0〜99,999,999円の範囲で入力してください');
+    }
+
+    if (!data.storageLocationId) {
+      errors.push('保管場所を選択してください');
+    }
+
+    return errors;
+  },
+
+  async submit() {
+    const data = this.collectFormData();
+    const errors = this.validateFormData(data);
+
+    if (errors.length > 0) {
+      Toast.warning(errors[0]);
+      return;
+    }
+
+    try {
+      Loading.show();
+      let productId;
+
+      if (this.isEditMode) {
+        // 更新
+        await Api.updateProduct(this.editProductId, data);
+        productId = this.editProductId;
+
+        // 新しく追加された加工費を保存（existingIdがないもののみ）
+        const newCosts = this.processingCosts.filter(c => !c.existingId);
+        for (const cost of newCosts) {
+          if (cost.processingType && cost.processorId && cost.amount > 0) {
+            await Api.createProcessingCost({
+              productId: productId,
+              processingType: cost.processingType,
+              processorId: cost.processorId,
+              processingContent: cost.processingContent || null,
+              amount: cost.amount,
+            });
+          }
+        }
+
+        Toast.success('製品を更新しました');
+      } else {
+        // 新規登録
+        const result = await Api.createProduct(data);
+        productId = result.productId;
+
+        // 加工費を保存
+        for (const cost of this.processingCosts) {
+          if (cost.processingType && cost.processorId && cost.amount > 0) {
+            await Api.createProcessingCost({
+              productId: productId,
+              processingType: cost.processingType,
+              processorId: cost.processorId,
+              processingContent: cost.processingContent || null,
+              amount: cost.amount,
+            });
+          }
+        }
+
+        Toast.success(`製品を登録しました（ID: ${productId}）`);
+      }
+
+      App.navigateTo('product-detail', { productId: productId });
+    } catch (error) {
+      console.error('Failed to save product:', error);
+      Toast.error(this.isEditMode ? '製品の更新に失敗しました' : '製品の登録に失敗しました');
+    } finally {
+      Loading.hide();
+    }
+  },
+};
+
+/**
+ * 製品詳細
+ */
+const ProductDetail = {
+  productId: null,
+  product: null,
+  processingCosts: [],
+
+  async init(productId) {
+    this.productId = productId || 'ITA-0001';
+    await this.loadProduct();
+    await this.loadProcessingCosts();
+  },
+
+  async loadProduct() {
+    try {
+      const product = await Api.getProduct(this.productId);
+      if (product) {
+        this.product = product;
+        this.render();
+      } else {
+        Toast.error('製品が見つかりません');
+        App.navigateTo('products');
+      }
+    } catch (error) {
+      console.error('Failed to load product:', error);
+      Toast.error('製品の読み込みに失敗しました');
+      // フォールバックとしてダミーデータを表示
+      this.product = {
+        productId: this.productId,
+        productName: '読み込み失敗',
+        status: '不明',
+      };
+      this.render();
+    }
+  },
+
+  async loadProcessingCosts() {
+    try {
+      const result = await Api.getProcessingCosts(this.productId);
+      this.processingCosts = result?.costs || [];
+      this.renderProcessingCosts();
+    } catch (error) {
+      console.error('Failed to load processing costs:', error);
+      this.processingCosts = [];
+      this.renderProcessingCosts();
+    }
+  },
+
+  render() {
+    const p = this.product;
+
+    document.getElementById('detailProductName').textContent = p.productName || '-';
+    document.getElementById('detailProductId').textContent = p.productId || '-';
+
+    const statusEl = document.getElementById('detailStatus');
+    statusEl.textContent = p.status || '-';
+    statusEl.className = `badge ${Utils.getStatusClass(p.status)}`;
+
+    // 写真ギャラリー表示
+    this.renderPhotoGallery();
+
+    document.getElementById('detailMajorCategory').textContent = p.majorCategory || '-';
+    document.getElementById('detailMinorCategory').textContent = p.minorCategory || '-';
+    document.getElementById('detailWoodType').textContent = p.woodType || '-';
+    document.getElementById('detailStorageLocation').textContent = App.getStorageLocationName(p.storageLocationId || p.storageLocation);
+
+    document.getElementById('detailRawLength').textContent = Utils.formatSize(p.rawLength);
+    document.getElementById('detailRawWidth').textContent = Utils.formatSize(p.rawWidth);
+    document.getElementById('detailRawThickness').textContent = Utils.formatSize(p.rawThickness);
+    document.getElementById('detailFinishedLength').textContent = Utils.formatSize(p.finishedLength);
+    document.getElementById('detailFinishedWidth').textContent = Utils.formatSize(p.finishedWidth);
+    document.getElementById('detailFinishedThickness').textContent = Utils.formatSize(p.finishedThickness);
+
+    document.getElementById('detailSupplier').textContent = App.getSupplierName(p.supplierId);
+    document.getElementById('detailPurchaseDate').textContent = Utils.formatDate(p.purchaseDate);
+    document.getElementById('detailPurchasePrice').textContent = Utils.formatCurrency(p.purchasePrice);
+    document.getElementById('detailStockDays').textContent = p.stockDays ? `${p.stockDays}日` : '-';
+
+    document.getElementById('detailProcessingCost').textContent = Utils.formatCurrency(p.processingCostTotal || 0);
+    document.getElementById('detailShippingCost').textContent = Utils.formatCurrency(p.shippingCost || 0);
+    document.getElementById('detailTotalCost').textContent = Utils.formatCurrency(p.totalCost || 0);
+    document.getElementById('detailProfitMargin').textContent = p.profitMargin ? `${p.profitMargin}%` : '60%';
+    document.getElementById('detailSuggestedPrice').textContent = Utils.formatCurrency(p.suggestedPrice || 0);
+    document.getElementById('detailPriceAdjustment').textContent = Utils.formatCurrency(p.priceAdjustment || 0);
+    document.getElementById('detailPriceExTax').textContent = Utils.formatCurrency(p.sellingPriceExTax || 0);
+    document.getElementById('detailPriceIncTax').textContent = Utils.formatCurrency(p.sellingPriceIncTax || 0);
+
+    // 備考
+    const remarksEl = document.getElementById('detailRemarks');
+    if (remarksEl) {
+      remarksEl.textContent = p.remarks || '-';
+    }
+
+    // 販売ボタンの状態を更新
+    const btnSell = document.getElementById('btnSell');
+    if (btnSell) {
+      if (p.status === '販売済み' || p.status === '削除済み') {
+        btnSell.disabled = true;
+        btnSell.style.display = 'none';
+      } else {
+        btnSell.disabled = false;
+        btnSell.style.display = '';
+      }
+    }
+  },
+
+  // 写真ギャラリーを表示
+  renderPhotoGallery() {
+    var gallery = document.getElementById('detailGallery');
+    if (!gallery) return;
+
+    var p = this.product;
+    var rawUrl = p.rawPhotoUrls ? this.convertDriveUrl(p.rawPhotoUrls) : null;
+    var finishedUrl = p.finishedPhotoUrls ? this.convertDriveUrl(p.finishedPhotoUrls) : null;
+
+    if (!rawUrl && !finishedUrl) {
+      gallery.innerHTML = '<div class="product-card-placeholder" style="height: 200px;">写真がありません</div>';
+      return;
+    }
+
+    var html = '<div style="display: flex; flex-direction: column; gap: 16px;">';
+
+    // メイン画像
+    var mainUrl = rawUrl || finishedUrl;
+    html += '<div style="text-align: center;">';
+    html += '<img src="' + mainUrl + '" class="product-photo-main" id="mainPhoto" alt="製品写真" onerror="this.style.display=\'none\'">';
+    html += '</div>';
+
+    // サムネイル（両方ある場合）
+    if (rawUrl && finishedUrl) {
+      html += '<div class="product-photos-container">';
+      html += '<div style="text-align: center;">';
+      html += '<img src="' + rawUrl + '" class="product-photo-thumb active" alt="入荷時" onclick="ProductDetail.selectPhoto(0)" onerror="this.style.display=\'none\'">';
+      html += '<p class="text-muted text-sm">入荷時</p>';
+      html += '</div>';
+      html += '<div style="text-align: center;">';
+      html += '<img src="' + finishedUrl + '" class="product-photo-thumb" alt="仕上げ後" onclick="ProductDetail.selectPhoto(1)" onerror="this.style.display=\'none\'">';
+      html += '<p class="text-muted text-sm">仕上げ後</p>';
+      html += '</div>';
+      html += '</div>';
+    } else {
+      html += '<p class="text-muted text-sm" style="text-align: center;">' + (rawUrl ? '入荷時' : '仕上げ後') + '</p>';
+    }
+
+    html += '</div>';
+    gallery.innerHTML = html;
+  },
+
+  // 写真のURL配列
+  photoUrls: [],
+
+  // 写真選択
+  selectPhoto(index) {
+    var mainPhoto = document.getElementById('mainPhoto');
+    var p = this.product;
+    var rawUrl = p.rawPhotoUrls ? this.convertDriveUrl(p.rawPhotoUrls) : null;
+    var finishedUrl = p.finishedPhotoUrls ? this.convertDriveUrl(p.finishedPhotoUrls) : null;
+
+    if (mainPhoto) {
+      mainPhoto.src = index === 0 ? rawUrl : finishedUrl;
+    }
+
+    // アクティブ状態を更新
+    var thumbs = document.querySelectorAll('.product-photo-thumb');
+    for (var i = 0; i < thumbs.length; i++) {
+      if (i === index) {
+        thumbs[i].classList.add('active');
+      } else {
+        thumbs[i].classList.remove('active');
+      }
+    }
+  },
+
+  // Google Drive URLを変換
+  convertDriveUrl(url) {
+    if (!url) return null;
+    var match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w800';
+    }
+    match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (match) {
+      return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w800';
+    }
+    return url;
+  },
+
+  renderProcessingCosts() {
+    const container = document.getElementById('detailProcessingCostsTable');
+    if (!container) return;
+
+    if (this.processingCosts.length === 0) {
+      container.innerHTML = '<p class="text-muted p-md">加工費の登録はありません。</p>';
+      return;
+    }
+
+    const tableHtml = `
+      <table class="table">
+        <thead>
+          <tr>
+            <th>加工種別</th>
+            <th>加工業者</th>
+            <th>加工内容</th>
+            <th style="text-align: right;">金額</th>
+            <th style="width: 80px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this.processingCosts.map(cost => `
+            <tr>
+              <td>${Utils.escapeHtml(cost.processingType || '-')}</td>
+              <td>${Utils.escapeHtml(App.getProcessorName(cost.processorId))}</td>
+              <td>${Utils.escapeHtml(cost.processingContent || '-')}</td>
+              <td style="text-align: right;">${Utils.formatCurrency(cost.amount || 0)}</td>
+              <td>
+                <button class="btn btn-sm btn-danger" onclick="ProductDetail.deleteProcessingCost('${cost.processingCostId}')">削除</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align: right; font-weight: 600;">合計</td>
+            <td style="text-align: right; font-weight: 700; color: var(--color-primary);">
+              ${Utils.formatCurrency(this.processingCosts.reduce((sum, c) => sum + (c.amount || 0), 0))}
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+
+    container.innerHTML = tableHtml;
+  },
+
+  edit() {
+    if (!this.product) {
+      Toast.error('製品情報が読み込まれていません');
+      return;
+    }
+
+    if (this.product.status === '販売済み') {
+      Toast.warning('販売済みの製品は編集できません');
+      return;
+    }
+
+    if (this.product.status === '削除済み') {
+      Toast.warning('削除済みの製品は編集できません');
+      return;
+    }
+
+    // 製品編集ページへ遷移（製品登録フォームを編集モードで使用）
+    App.navigateTo('product-edit', { productId: this.productId });
+  },
+
+  // ==================== 販売処理 ====================
+
+  sell() {
+    if (!this.product) {
+      Toast.error('製品情報が読み込まれていません');
+      return;
+    }
+
+    if (this.product.status === '販売済み') {
+      Toast.warning('この製品は既に販売済みです');
+      return;
+    }
+
+    if (this.product.status === '削除済み') {
+      Toast.warning('削除済みの製品は販売できません');
+      return;
+    }
+
+    // モーダルに製品情報を設定
+    document.getElementById('sellProductName').textContent = this.product.productName || '-';
+    document.getElementById('sellProductId').textContent = this.product.productId || '-';
+    document.getElementById('sellSuggestedPrice').textContent = Utils.formatCurrency(this.product.sellingPriceIncTax || 0);
+
+    // 実売価格のデフォルト値を設定
+    document.getElementById('actualSalesPrice').value = this.product.sellingPriceIncTax || 0;
+
+    // 販売日のデフォルト値を今日に設定
+    document.getElementById('salesDate').value = new Date().toISOString().split('T')[0];
+
+    // 販売先をクリア
+    document.getElementById('salesDestination').value = '';
+
+    // モーダルを表示
+    document.getElementById('sellModal').classList.remove('hidden');
+  },
+
+  closeSellModal() {
+    document.getElementById('sellModal').classList.add('hidden');
+  },
+
+  async submitSale() {
+    const actualSalesPrice = parseFloat(document.getElementById('actualSalesPrice').value);
+    const salesDate = document.getElementById('salesDate').value;
+    const salesDestination = document.getElementById('salesDestination').value.trim();
+
+    // バリデーション
+    if (isNaN(actualSalesPrice) || actualSalesPrice < 0) {
+      Toast.warning('実売価格を正しく入力してください');
+      return;
+    }
+
+    if (!salesDate) {
+      Toast.warning('販売日を入力してください');
+      return;
+    }
+
+    try {
+      const salesData = {
+        actualSalesPrice: actualSalesPrice,
+        salesDate: new Date(salesDate),
+        salesDestination: salesDestination || null,
+      };
+
+      await Api.sellProduct(this.productId, salesData);
+
+      Toast.success('販売処理が完了しました');
+      this.closeSellModal();
+
+      // 製品情報を再読み込み
+      await this.loadProduct();
+    } catch (error) {
+      console.error('Failed to sell product:', error);
+      Toast.error('販売処理に失敗しました: ' + (error.message || '不明なエラー'));
+    }
+  },
+
+  // ==================== 加工費追加 ====================
+
+  addProcessingCost() {
+    if (!this.product) {
+      Toast.error('製品情報が読み込まれていません');
+      return;
+    }
+
+    if (this.product.status === '販売済み' || this.product.status === '削除済み') {
+      Toast.warning('この製品には加工費を追加できません');
+      return;
+    }
+
+    // 加工業者セレクトボックスを初期化
+    App.populateSelect('processorId', App.masterData.processors, 'processorId', 'name');
+
+    // フォームをリセット
+    document.getElementById('processingCostForm').reset();
+
+    // モーダルを表示
+    document.getElementById('processingCostModal').classList.remove('hidden');
+  },
+
+  closeProcessingCostModal() {
+    document.getElementById('processingCostModal').classList.add('hidden');
+  },
+
+  async submitProcessingCost() {
+    const processingType = document.getElementById('processingType').value;
+    const processorId = document.getElementById('processorId').value;
+    const processingContent = document.getElementById('processingContent').value.trim();
+    const amount = parseFloat(document.getElementById('processingAmount').value);
+
+    // バリデーション
+    if (!processingType) {
+      Toast.warning('加工種別を選択してください');
+      return;
+    }
+
+    if (!processorId) {
+      Toast.warning('加工業者を選択してください');
+      return;
+    }
+
+    if (isNaN(amount) || amount < 0) {
+      Toast.warning('金額を正しく入力してください');
+      return;
+    }
+
+    try {
+      const data = {
+        productId: this.productId,
+        processingType: processingType,
+        processorId: processorId,
+        processingContent: processingContent || null,
+        amount: amount,
+      };
+
+      await Api.createProcessingCost(data);
+
+      Toast.success('加工費を追加しました');
+      this.closeProcessingCostModal();
+
+      // 加工費一覧と製品情報を再読み込み
+      await Promise.all([
+        this.loadProcessingCosts(),
+        this.loadProduct(),
+      ]);
+    } catch (error) {
+      console.error('Failed to create processing cost:', error);
+      Toast.error('加工費の追加に失敗しました: ' + (error.message || '不明なエラー'));
+    }
+  },
+
+  async deleteProcessingCost(costId) {
+    if (!confirm('この加工費を削除しますか？')) {
+      return;
+    }
+
+    try {
+      await Api.deleteProcessingCost(costId);
+
+      Toast.success('加工費を削除しました');
+
+      // 加工費一覧と製品情報を再読み込み
+      await Promise.all([
+        this.loadProcessingCosts(),
+        this.loadProduct(),
+      ]);
+    } catch (error) {
+      console.error('Failed to delete processing cost:', error);
+      Toast.error('加工費の削除に失敗しました: ' + (error.message || '不明なエラー'));
+    }
+  },
+};
+
+/**
+ * 棚卸し
+ */
+const Inventory = {
+  currentSession: null,
+  products: {
+    unconfirmed: [],
+    confirmed: [],
+    discrepancy: [],
+  },
+
+  async init() {
+    App.populateSelect('inventoryLocation', App.masterData.storageLocations, 'storageLocationId', 'name');
+    await this.loadActiveSessions();
+    this.showStartScreen();
+  },
+
+  showStartScreen() {
+    document.getElementById('inventoryStart').classList.remove('hidden');
+    document.getElementById('inventorySession').classList.add('hidden');
+  },
+
+  showSessionScreen() {
+    document.getElementById('inventoryStart').classList.add('hidden');
+    document.getElementById('inventorySession').classList.remove('hidden');
+  },
+
+  async loadActiveSessions() {
+    try {
+      const sessions = await Api.call('getActiveSessions');
+      this.renderActiveSessions(sessions || []);
+    } catch (error) {
+      console.error('Failed to load active sessions:', error);
+      this.renderActiveSessions([]);
+    }
+  },
+
+  renderActiveSessions(sessions) {
+    const container = document.getElementById('ongoingSessionsList');
+
+    if (!sessions || sessions.length === 0) {
+      container.innerHTML = '<p class="text-muted">進行中のセッションはありません。</p>';
+      return;
+    }
+
+    container.innerHTML = sessions.map(session => {
+      const location = App.masterData.storageLocations.find(l => l.storageLocationId === session.storageLocationId);
+      const locationName = location ? location.name : session.storageLocationId;
+      const progress = session.targetCount > 0 ? Math.round((session.confirmedCount / session.targetCount) * 100) : 0;
+
+      return `
+        <div class="card mb-sm" style="cursor: pointer;" onclick="Inventory.resumeSession('${session.sessionId}')">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <div>
+                <strong>${Utils.escapeHtml(locationName)}</strong>
+                <p class="text-muted text-sm">${Utils.formatDate(session.startedAt)} 開始</p>
+              </div>
+              <div style="text-align: right;">
+                <span class="badge badge-warning">進行中</span>
+                <p class="text-sm mt-xs">${session.confirmedCount}/${session.targetCount} (${progress}%)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  async startSession() {
+    const locationId = document.getElementById('inventoryLocation').value;
+    if (!locationId) {
+      Toast.warning('保管場所を選択してください');
+      return;
+    }
+
+    try {
+      const session = await Api.callWithLoading('startInventorySession', locationId);
+
+      if (!session) {
+        Toast.error('セッションの開始に失敗しました');
+        return;
+      }
+
+      this.currentSession = session;
+      Toast.success('棚卸しを開始しました');
+      await this.loadSessionProgress();
+      this.showSessionScreen();
+    } catch (error) {
+      console.error('Failed to start session:', error);
+      Toast.error('棚卸しの開始に失敗しました: ' + (error.message || '不明なエラー'));
+    }
+  },
+
+  async resumeSession(sessionId) {
+    try {
+      const progress = await Api.callWithLoading('getInventoryProgress', sessionId);
+
+      if (!progress) {
+        Toast.error('セッションの読み込みに失敗しました');
+        return;
+      }
+
+      this.currentSession = progress;
+      this.updateProgressUI(progress);
+      this.products.unconfirmed = progress.unconfirmedProducts || [];
+      this.products.confirmed = progress.confirmedProducts || [];
+      this.products.discrepancy = progress.discrepancyProducts || [];
+      this.renderProductLists();
+      this.showSessionScreen();
+    } catch (error) {
+      console.error('Failed to resume session:', error);
+      Toast.error('セッションの再開に失敗しました');
+    }
+  },
+
+  async loadSessionProgress() {
+    if (!this.currentSession?.sessionId) return;
+
+    try {
+      const progress = await Api.call('getInventoryProgress', this.currentSession.sessionId);
+
+      if (progress) {
+        this.currentSession = progress;
+        this.updateProgressUI(progress);
+        this.products.unconfirmed = progress.unconfirmedProducts || [];
+        this.products.confirmed = progress.confirmedProducts || [];
+        this.products.discrepancy = progress.discrepancyProducts || [];
+        this.renderProductLists();
+      }
+    } catch (error) {
+      console.error('Failed to load session progress:', error);
+    }
+  },
+
+  updateProgressUI(progress) {
+    const location = App.masterData.storageLocations.find(l => l.storageLocationId === progress.storageLocationId);
+    document.getElementById('sessionLocation').textContent = location ? location.name : progress.storageLocationId;
+
+    const confirmed = progress.confirmedCount || 0;
+    const target = progress.targetCount || 0;
+    const discrepancy = progress.discrepancyCount || 0;
+    const unconfirmed = target - confirmed;
+    const percentage = target > 0 ? Math.round((confirmed / target) * 100) : 0;
+
+    document.getElementById('confirmedCount').textContent = confirmed;
+    document.getElementById('unconfirmedCount').textContent = unconfirmed;
+    document.getElementById('discrepancyCount').textContent = discrepancy;
+    document.getElementById('progressBar').style.width = `${percentage}%`;
+  },
+
+  renderProductLists() {
+    this.renderUnconfirmedList();
+    this.renderConfirmedList();
+    this.renderDiscrepancyList();
+  },
+
+  renderUnconfirmedList() {
+    const container = document.getElementById('unconfirmedList');
+    const products = this.products.unconfirmed || [];
+
+    if (products.length === 0) {
+      container.innerHTML = '<p class="text-muted text-center p-lg">未確認の製品はありません。</p>';
+      return;
+    }
+
+    container.innerHTML = products.map(p => `
+      <div class="card mb-sm">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <strong>${Utils.escapeHtml(p.productName || p.productId)}</strong>
+            <p class="text-muted text-sm">${Utils.escapeHtml(p.productId)}</p>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="Inventory.confirmProduct('${p.productId}', 'list')">
+            確認
+          </button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  renderConfirmedList() {
+    const container = document.getElementById('confirmedList');
+    const products = this.products.confirmed || [];
+
+    if (products.length === 0) {
+      container.innerHTML = '<p class="text-muted text-center p-lg">確認済みの製品はありません。</p>';
+      return;
+    }
+
+    container.innerHTML = products.map(p => `
+      <div class="card mb-sm">
+        <div class="card-body flex items-center justify-between">
+          <div>
+            <strong>${Utils.escapeHtml(p.productName || p.productId)}</strong>
+            <p class="text-muted text-sm">${Utils.escapeHtml(p.productId)}</p>
+          </div>
+          <span class="badge badge-success">確認済み</span>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  renderDiscrepancyList() {
+    const container = document.getElementById('discrepancyList');
+    const products = this.products.discrepancy || [];
+
+    if (products.length === 0) {
+      container.innerHTML = '<p class="text-muted text-center p-lg">差異のある製品はありません。</p>';
+      return;
+    }
+
+    container.innerHTML = products.map(p => `
+      <div class="card mb-sm" style="border-color: var(--color-error);">
+        <div class="card-body">
+          <div class="flex items-center justify-between">
+            <div>
+              <strong>${Utils.escapeHtml(p.productName || p.productId)}</strong>
+              <p class="text-muted text-sm">${Utils.escapeHtml(p.productId)}</p>
+            </div>
+            <span class="badge badge-error">差異あり</span>
+          </div>
+          <p class="text-error text-sm mt-sm">${Utils.escapeHtml(p.discrepancyReason || '要確認')}</p>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  switchTab(tab) {
+    document.querySelectorAll('#inventorySession .tab').forEach((t) => t.classList.remove('active'));
+    document.querySelectorAll('#inventorySession .tab-content').forEach((c) => c.classList.remove('active'));
+
+    event.target.classList.add('active');
+    const tabId = `tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`;
+    document.getElementById(tabId).classList.add('active');
+  },
+
+  openScanner() {
+    // GASではカメラアクセスが制限されているため、QRスキャンは代替実装
+    // モバイルデバイスでは別のQRリーダーアプリを使用し、製品IDを手入力する運用を推奨
+    Toast.info('QRコードをスキャンしてIDを取得し、手入力欄に入力してください。');
+    document.getElementById('manualProductId').focus();
+  },
+
+  async confirmManual() {
+    const productId = document.getElementById('manualProductId').value.trim().toUpperCase();
+    if (!productId) {
+      Toast.warning('製品IDを入力してください');
+      return;
+    }
+
+    await this.confirmProduct(productId, 'manual');
+    document.getElementById('manualProductId').value = '';
+  },
+
+  async confirmProduct(productId, method) {
+    if (!this.currentSession?.sessionId) {
+      Toast.error('セッションが開始されていません');
+      return;
+    }
+
+    try {
+      await Api.call('confirmInventoryProduct', this.currentSession.sessionId, productId, method);
+      Toast.success(`${productId} を確認しました`);
+      await this.loadSessionProgress();
+    } catch (error) {
+      console.error('Failed to confirm product:', error);
+      Toast.error('確認に失敗しました: ' + (error.message || '不明なエラー'));
+    }
+  },
+
+  async pauseSession() {
+    if (!this.currentSession?.sessionId) {
+      Toast.error('セッションが開始されていません');
+      return;
+    }
+
+    if (!confirm('棚卸しを中断しますか？後から再開できます。')) {
+      return;
+    }
+
+    // セッションは自動的に保存されているため、画面を切り替えるだけ
+    Toast.info('棚卸しを中断しました。いつでも再開できます。');
+    this.currentSession = null;
+    await this.loadActiveSessions();
+    this.showStartScreen();
+  },
+
+  async completeSession() {
+    if (!this.currentSession?.sessionId) {
+      Toast.error('セッションが開始されていません');
+      return;
+    }
+
+    const unconfirmedCount = this.products.unconfirmed?.length || 0;
+
+    if (unconfirmedCount > 0) {
+      if (!confirm(`未確認の製品が${unconfirmedCount}件あります。棚卸しを完了しますか？`)) {
+        return;
+      }
+    } else {
+      if (!confirm('棚卸しを完了しますか？')) {
+        return;
+      }
+    }
+
+    try {
+      await Api.callWithLoading('completeInventorySession', this.currentSession.sessionId);
+      Toast.success('棚卸しを完了しました');
+      this.currentSession = null;
+      await this.loadActiveSessions();
+      this.showStartScreen();
+    } catch (error) {
+      console.error('Failed to complete session:', error);
+      Toast.error('完了処理に失敗しました: ' + (error.message || '不明なエラー'));
+    }
+  },
+};
+
+/**
+ * マスター管理
+ */
+const Master = {
+  currentTab: 'woodTypes',
+
+  async init() {
+    await this.loadAllMasters();
+  },
+
+  async loadAllMasters() {
+    // マスターデータを再読み込み
+    await App.loadMasterData();
+    this.renderWoodTypes();
+    this.renderSuppliers();
+    this.renderProcessors();
+    this.renderStorageLocations();
+  },
+
+  switchTab(tab) {
+    document.querySelectorAll('#page-masters .tab').forEach((t) => t.classList.remove('active'));
+    document.querySelectorAll('#page-masters .tab-content').forEach((c) => {
+      c.classList.add('hidden');
+      c.classList.remove('active');
+    });
+
+    event.target.classList.add('active');
+    const tabContent = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+    tabContent.classList.remove('hidden');
+    tabContent.classList.add('active');
+
+    this.currentTab = tab;
+  },
+
+  // ==================== 樹種マスター ====================
+
+  renderWoodTypes() {
+    const tbody = document.getElementById('woodTypesBody');
+    if (App.masterData.woodTypes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">データがありません</td></tr>';
+      return;
+    }
+    tbody.innerHTML = App.masterData.woodTypes
+      .map(
+        (item) => `
+      <tr>
+        <td>${Utils.escapeHtml(item.woodTypeId)}</td>
+        <td>${Utils.escapeHtml(item.name)}</td>
+        <td>${item.displayOrder || '-'}</td>
+        <td>
+          <button class="btn btn-sm btn-secondary" onclick="Master.editWoodType('${item.woodTypeId}')">編集</button>
+        </td>
+      </tr>
+    `
+      )
+      .join('');
+  },
+
+  addWoodType() {
+    document.getElementById('woodTypeModalTitle').textContent = '樹種を追加';
+    document.getElementById('woodTypeEditId').value = '';
+    document.getElementById('woodTypeName').value = '';
+    document.getElementById('woodTypeDisplayOrder').value = '';
+    document.getElementById('woodTypeModal').classList.remove('hidden');
+  },
+
+  editWoodType(id) {
+    const item = App.masterData.woodTypes.find(w => w.woodTypeId === id);
+    if (!item) {
+      Toast.error('樹種が見つかりません');
+      return;
+    }
+    document.getElementById('woodTypeModalTitle').textContent = '樹種を編集';
+    document.getElementById('woodTypeEditId').value = id;
+    document.getElementById('woodTypeName').value = item.name || '';
+    document.getElementById('woodTypeDisplayOrder').value = item.displayOrder || '';
+    document.getElementById('woodTypeModal').classList.remove('hidden');
+  },
+
+  closeWoodTypeModal() {
+    document.getElementById('woodTypeModal').classList.add('hidden');
+  },
+
+  async submitWoodType() {
+    const editId = document.getElementById('woodTypeEditId').value;
+    const name = document.getElementById('woodTypeName').value.trim();
+    const displayOrder = document.getElementById('woodTypeDisplayOrder').value;
+
+    if (!name) {
+      Toast.warning('樹種名を入力してください');
+      return;
+    }
+
+    try {
+      const data = {
+        name: name,
+        displayOrder: displayOrder ? parseInt(displayOrder) : undefined,
+      };
+
+      await Api.addMasterData('woodType', data);
+      Toast.success(editId ? '樹種を更新しました' : '樹種を追加しました');
+      this.closeWoodTypeModal();
+      await this.loadAllMasters();
+    } catch (error) {
+      console.error('Failed to save wood type:', error);
+      Toast.error('保存に失敗しました');
+    }
+  },
+
+  // ==================== 仕入れ先マスター ====================
+
+  renderSuppliers() {
+    const tbody = document.getElementById('suppliersBody');
+    if (App.masterData.suppliers.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">データがありません</td></tr>';
+      return;
+    }
+    tbody.innerHTML = App.masterData.suppliers
+      .map(
+        (item) => `
+      <tr>
+        <td>${Utils.escapeHtml(item.supplierId)}</td>
+        <td>${Utils.escapeHtml(item.name)}</td>
+        <td>${Utils.escapeHtml(item.contact || '-')}</td>
+        <td>${Utils.escapeHtml(item.address || '-')}</td>
+        <td>
+          <button class="btn btn-sm btn-secondary" onclick="Master.editSupplier('${item.supplierId}')">編集</button>
+        </td>
+      </tr>
+    `
+      )
+      .join('');
+  },
+
+  addSupplier() {
+    document.getElementById('supplierModalTitle').textContent = '仕入れ先を追加';
+    document.getElementById('supplierEditId').value = '';
+    document.getElementById('supplierName').value = '';
+    document.getElementById('supplierContact').value = '';
+    document.getElementById('supplierAddress').value = '';
+    document.getElementById('supplierModal').classList.remove('hidden');
+  },
+
+  editSupplier(id) {
+    const item = App.masterData.suppliers.find(s => s.supplierId === id);
+    if (!item) {
+      Toast.error('仕入れ先が見つかりません');
+      return;
+    }
+    document.getElementById('supplierModalTitle').textContent = '仕入れ先を編集';
+    document.getElementById('supplierEditId').value = id;
+    document.getElementById('supplierName').value = item.name || '';
+    document.getElementById('supplierContact').value = item.contact || '';
+    document.getElementById('supplierAddress').value = item.address || '';
+    document.getElementById('supplierModal').classList.remove('hidden');
+  },
+
+  closeSupplierModal() {
+    document.getElementById('supplierModal').classList.add('hidden');
+  },
+
+  async submitSupplier() {
+    const editId = document.getElementById('supplierEditId').value;
+    const name = document.getElementById('supplierName').value.trim();
+    const contact = document.getElementById('supplierContact').value.trim();
+    const address = document.getElementById('supplierAddress').value.trim();
+
+    if (!name) {
+      Toast.warning('業者名を入力してください');
+      return;
+    }
+
+    try {
+      const data = {
+        name: name,
+        contact: contact || undefined,
+        address: address || undefined,
+      };
+
+      await Api.addMasterData('supplier', data);
+      Toast.success(editId ? '仕入れ先を更新しました' : '仕入れ先を追加しました');
+      this.closeSupplierModal();
+      await this.loadAllMasters();
+    } catch (error) {
+      console.error('Failed to save supplier:', error);
+      Toast.error('保存に失敗しました');
+    }
+  },
+
+  // ==================== 加工業者マスター ====================
+
+  renderProcessors() {
+    const tbody = document.getElementById('processorsBody');
+    if (App.masterData.processors.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">データがありません</td></tr>';
+      return;
+    }
+    tbody.innerHTML = App.masterData.processors
+      .map(
+        (item) => `
+      <tr>
+        <td>${Utils.escapeHtml(item.processorId)}</td>
+        <td>${Utils.escapeHtml(item.name)}</td>
+        <td>${(item.processingTypes || []).join(', ') || '-'}</td>
+        <td>${Utils.escapeHtml(item.contact || '-')}</td>
+        <td>
+          <button class="btn btn-sm btn-secondary" onclick="Master.editProcessor('${item.processorId}')">編集</button>
+        </td>
+      </tr>
+    `
+      )
+      .join('');
+  },
+
+  addProcessor() {
+    document.getElementById('processorModalTitle').textContent = '加工業者を追加';
+    document.getElementById('processorEditId').value = '';
+    document.getElementById('processorName').value = '';
+    document.getElementById('processorContact').value = '';
+    // チェックボックスをリセット
+    document.querySelectorAll('#processorTypes input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.getElementById('processorModal').classList.remove('hidden');
+  },
+
+  editProcessor(id) {
+    const item = App.masterData.processors.find(p => p.processorId === id);
+    if (!item) {
+      Toast.error('加工業者が見つかりません');
+      return;
+    }
+    document.getElementById('processorModalTitle').textContent = '加工業者を編集';
+    document.getElementById('processorEditId').value = id;
+    document.getElementById('processorName').value = item.name || '';
+    document.getElementById('processorContact').value = item.contact || '';
+    // チェックボックスを設定
+    document.querySelectorAll('#processorTypes input[type="checkbox"]').forEach(cb => {
+      cb.checked = (item.processingTypes || []).includes(cb.value);
+    });
+    document.getElementById('processorModal').classList.remove('hidden');
+  },
+
+  closeProcessorModal() {
+    document.getElementById('processorModal').classList.add('hidden');
+  },
+
+  async submitProcessor() {
+    const editId = document.getElementById('processorEditId').value;
+    const name = document.getElementById('processorName').value.trim();
+    const contact = document.getElementById('processorContact').value.trim();
+    const processingTypes = Array.from(
+      document.querySelectorAll('#processorTypes input[type="checkbox"]:checked')
+    ).map(cb => cb.value);
+
+    if (!name) {
+      Toast.warning('業者名を入力してください');
+      return;
+    }
+
+    try {
+      const data = {
+        name: name,
+        contact: contact || undefined,
+        processingTypes: processingTypes.length > 0 ? processingTypes : undefined,
+      };
+
+      await Api.addMasterData('processor', data);
+      Toast.success(editId ? '加工業者を更新しました' : '加工業者を追加しました');
+      this.closeProcessorModal();
+      await this.loadAllMasters();
+    } catch (error) {
+      console.error('Failed to save processor:', error);
+      Toast.error('保存に失敗しました');
+    }
+  },
+
+  // ==================== 保管場所マスター ====================
+
+  renderStorageLocations() {
+    const tbody = document.getElementById('storageLocationsBody');
+    if (App.masterData.storageLocations.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">データがありません</td></tr>';
+      return;
+    }
+    tbody.innerHTML = App.masterData.storageLocations
+      .map(
+        (item) => `
+      <tr>
+        <td>${Utils.escapeHtml(item.storageLocationId)}</td>
+        <td>${Utils.escapeHtml(item.name)}</td>
+        <td>${item.displayOrder || '-'}</td>
+        <td>${Utils.formatDate(item.lastInventoryDate) || '-'}</td>
+        <td>
+          <button class="btn btn-sm btn-secondary" onclick="Master.editStorageLocation('${item.storageLocationId}')">編集</button>
+        </td>
+      </tr>
+    `
+      )
+      .join('');
+  },
+
+  addStorageLocation() {
+    document.getElementById('storageLocationModalTitle').textContent = '保管場所を追加';
+    document.getElementById('storageLocationEditId').value = '';
+    document.getElementById('storageLocationName').value = '';
+    document.getElementById('storageLocationDisplayOrder').value = '';
+    document.getElementById('storageLocationModal').classList.remove('hidden');
+  },
+
+  editStorageLocation(id) {
+    const item = App.masterData.storageLocations.find(l => l.storageLocationId === id);
+    if (!item) {
+      Toast.error('保管場所が見つかりません');
+      return;
+    }
+    document.getElementById('storageLocationModalTitle').textContent = '保管場所を編集';
+    document.getElementById('storageLocationEditId').value = id;
+    document.getElementById('storageLocationName').value = item.name || '';
+    document.getElementById('storageLocationDisplayOrder').value = item.displayOrder || '';
+    document.getElementById('storageLocationModal').classList.remove('hidden');
+  },
+
+  closeStorageLocationModal() {
+    document.getElementById('storageLocationModal').classList.add('hidden');
+  },
+
+  async submitStorageLocation() {
+    const editId = document.getElementById('storageLocationEditId').value;
+    const name = document.getElementById('storageLocationName').value.trim();
+    const displayOrder = document.getElementById('storageLocationDisplayOrder').value;
+
+    if (!name) {
+      Toast.warning('場所名を入力してください');
+      return;
+    }
+
+    try {
+      const data = {
+        name: name,
+        displayOrder: displayOrder ? parseInt(displayOrder) : undefined,
+      };
+
+      await Api.addMasterData('storageLocation', data);
+      Toast.success(editId ? '保管場所を更新しました' : '保管場所を追加しました');
+      this.closeStorageLocationModal();
+      await this.loadAllMasters();
+    } catch (error) {
+      console.error('Failed to save storage location:', error);
+      Toast.error('保存に失敗しました');
+    }
+  },
+};
+
+/**
+ * 販売済み一覧
+ */
+const SalesList = {
+  products: [],
+  stats: null,
+  startDate: null,
+  endDate: null,
+  woodType: '',
+
+  async init() {
+    // 樹種セレクトボックスを初期化
+    App.populateSelect('salesFilterWoodType', App.masterData.woodTypes, 'woodTypeId', 'name', 'すべて');
+
+    // デフォルトで今月の販売を表示
+    this.setThisMonth();
+    await this.loadData();
+  },
+
+  setThisMonth() {
+    const now = new Date();
+    this.startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    this.endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    document.getElementById('salesStartDate').value = this.formatDateForInput(this.startDate);
+    document.getElementById('salesEndDate').value = this.formatDateForInput(this.endDate);
+  },
+
+  formatDateForInput(date) {
+    return date.toISOString().split('T')[0];
+  },
+
+  async loadData() {
+    try {
+      Loading.show();
+
+      // 販売済み製品と統計を並行して取得
+      const [soldProducts, stats] = await Promise.all([
+        Api.call('getSoldProductsWithFilter',
+          this.startDate ? this.startDate.toISOString() : null,
+          this.endDate ? new Date(this.endDate.getTime() + 86400000 - 1).toISOString() : null,
+          this.woodType || null
+        ),
+        Api.call('getSalesStats',
+          this.startDate ? this.startDate.toISOString() : null,
+          this.endDate ? new Date(this.endDate.getTime() + 86400000 - 1).toISOString() : null
+        ),
+      ]);
+
+      this.products = soldProducts || [];
+      this.stats = stats;
+
+      this.renderTable();
+      this.renderStats();
+    } catch (error) {
+      console.error('SalesList load error:', error);
+      Toast.error('販売データの読み込みに失敗しました');
+      this.products = [];
+      this.stats = null;
+      this.renderTable();
+      this.renderStats();
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  renderTable() {
+    const tbody = document.getElementById('salesTableBody');
+
+    if (this.products.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">該当する販売データがありません。</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = this.products.map(p => {
+      const salesDate = p.salesDate ? Utils.formatDate(p.salesDate) : '-';
+      const salesPrice = Utils.formatCurrency(p.actualSalesPrice || 0);
+      const destination = p.salesDestination || '-';
+
+      return `
+        <tr>
+          <td>${salesDate}</td>
+          <td>${Utils.escapeHtml(p.productName || '-')}</td>
+          <td>${Utils.escapeHtml(p.woodType || '-')}</td>
+          <td class="text-right">${salesPrice}</td>
+          <td>${Utils.escapeHtml(destination)}</td>
+          <td>
+            <button class="btn btn-sm btn-secondary" onclick="SalesList.viewProduct('${p.productId}')">詳細</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  renderStats() {
+    const stats = this.stats || {
+      totalSales: 0,
+      totalRevenue: 0,
+      totalProfit: 0,
+      averageProfitMargin: 0,
+    };
+
+    document.getElementById('totalSalesCount').textContent = stats.totalSales || 0;
+    document.getElementById('totalRevenue').textContent = Utils.formatCurrency(stats.totalRevenue || 0);
+    document.getElementById('totalProfit').textContent = Utils.formatCurrency(stats.totalProfit || 0);
+    document.getElementById('avgProfitMargin').textContent = (stats.averageProfitMargin || 0) + '%';
+  },
+
+  applyFilter() {
+    const startInput = document.getElementById('salesStartDate').value;
+    const endInput = document.getElementById('salesEndDate').value;
+    const woodType = document.getElementById('salesFilterWoodType').value;
+
+    this.startDate = startInput ? new Date(startInput) : null;
+    this.endDate = endInput ? new Date(endInput) : null;
+    this.woodType = woodType;
+
+    if (this.startDate && this.endDate && this.startDate > this.endDate) {
+      Toast.warning('開始日は終了日より前にしてください');
+      return;
+    }
+
+    this.loadData();
+  },
+
+  resetFilter() {
+    this.woodType = '';
+    document.getElementById('salesFilterWoodType').value = '';
+    this.setThisMonth();
+    this.loadData();
+  },
+
+  viewProduct(productId) {
+    App.navigateTo('product-detail', { productId });
+  },
+
+  async exportCsv() {
+    try {
+      Loading.show();
+      const csvData = await Api.call('exportCsv', 'sales', {});
+
+      // CSVをダウンロード
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `sales_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      Toast.success('CSVをダウンロードしました');
+    } catch (error) {
+      console.error('Export CSV error:', error);
+      Toast.error('CSVエクスポートに失敗しました');
+    } finally {
+      Loading.hide();
+    }
+  },
+};
+
+/**
+ * レポート
+ */
+const Reports = {
+  async init() {
+    // 樹種セレクトボックスを初期化
+    App.populateSelect('catalogFilterWoodType', App.masterData.woodTypes, 'woodTypeId', 'name', 'すべて');
+  },
+
+  async exportInventoryCsv() {
+    try {
+      Loading.show();
+      const csvData = await Api.call('exportCsv', 'products', {});
+
+      // CSVをダウンロード
+      this.downloadCsv(csvData, `inventory_${new Date().toISOString().split('T')[0]}.csv`);
+      Toast.success('在庫一覧CSVをダウンロードしました');
+    } catch (error) {
+      console.error('Export inventory CSV error:', error);
+      Toast.error('CSVエクスポートに失敗しました');
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  async exportSalesCsv() {
+    try {
+      Loading.show();
+      const csvData = await Api.call('exportCsv', 'sales', {});
+
+      // CSVをダウンロード
+      this.downloadCsv(csvData, `sales_${new Date().toISOString().split('T')[0]}.csv`);
+      Toast.success('販売実績CSVをダウンロードしました');
+    } catch (error) {
+      console.error('Export sales CSV error:', error);
+      Toast.error('CSVエクスポートに失敗しました');
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  async generateCatalogPdf() {
+    const filterWoodType = document.getElementById('catalogFilterWoodType')?.value;
+    const filterStatus = document.getElementById('catalogFilterStatus')?.value || '販売中';
+
+    try {
+      Loading.show();
+      const result = await Api.call('generateCatalogPdf', { woodType: filterWoodType, status: filterStatus });
+
+      if (result.success && result.url) {
+        window.open(result.url, '_blank');
+        Toast.success('PDFを生成しました');
+      } else {
+        Toast.warning(result.message || 'PDF生成機能は現在開発中です');
+      }
+    } catch (error) {
+      console.error('Generate PDF error:', error);
+      Toast.error('PDF生成に失敗しました');
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  downloadCsv(csvData, filename) {
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
+};
+
+// 初期化
+document.addEventListener('DOMContentLoaded', () => {
+  App.init();
+});
+</script>
