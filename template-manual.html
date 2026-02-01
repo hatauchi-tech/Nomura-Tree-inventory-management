@@ -1,0 +1,1882 @@
+<!-- ========================================
+     マニュアル - 導入手順書 & 取扱説明書
+     ======================================== -->
+
+<!-- 目次サイドパネル（PC用） -->
+<div class="manual-layout">
+  <aside class="manual-toc" id="manualToc">
+    <div class="manual-toc-header">目次</div>
+    <nav class="manual-toc-nav" id="manualTocNav">
+      <div class="manual-toc-section-title">導入手順書</div>
+      <a href="#" class="manual-toc-link active" data-section="setup-overview" onclick="Manual.scrollTo('setup-overview'); return false;">概要・前提条件</a>
+      <a href="#" class="manual-toc-link" data-section="setup-step1" onclick="Manual.scrollTo('setup-step1'); return false;">Step 1: スプレッドシート準備</a>
+      <a href="#" class="manual-toc-link" data-section="setup-step2" onclick="Manual.scrollTo('setup-step2'); return false;">Step 2: スクリプト設置</a>
+      <a href="#" class="manual-toc-link" data-section="setup-step3" onclick="Manual.scrollTo('setup-step3'); return false;">Step 3: 初期セットアップ</a>
+      <a href="#" class="manual-toc-link" data-section="setup-step4" onclick="Manual.scrollTo('setup-step4'); return false;">Step 4: Webアプリ公開</a>
+      <a href="#" class="manual-toc-link" data-section="setup-step5" onclick="Manual.scrollTo('setup-step5'); return false;">Step 5: マスターデータ登録</a>
+
+      <div class="manual-toc-section-title">取扱説明書</div>
+      <a href="#" class="manual-toc-link" data-section="guide-home" onclick="Manual.scrollTo('guide-home'); return false;">画面構成・ナビゲーション</a>
+      <a href="#" class="manual-toc-link" data-section="guide-dashboard" onclick="Manual.scrollTo('guide-dashboard'); return false;">ダッシュボード</a>
+      <a href="#" class="manual-toc-link" data-section="guide-register" onclick="Manual.scrollTo('guide-register'); return false;">製品登録</a>
+      <a href="#" class="manual-toc-link" data-section="guide-list" onclick="Manual.scrollTo('guide-list'); return false;">製品一覧・検索</a>
+      <a href="#" class="manual-toc-link" data-section="guide-detail" onclick="Manual.scrollTo('guide-detail'); return false;">製品詳細・編集</a>
+      <a href="#" class="manual-toc-link" data-section="guide-sell" onclick="Manual.scrollTo('guide-sell'); return false;">販売処理</a>
+      <a href="#" class="manual-toc-link" data-section="guide-sales-list" onclick="Manual.scrollTo('guide-sales-list'); return false;">販売済み一覧</a>
+      <a href="#" class="manual-toc-link" data-section="guide-inventory" onclick="Manual.scrollTo('guide-inventory'); return false;">棚卸し</a>
+      <a href="#" class="manual-toc-link" data-section="guide-master" onclick="Manual.scrollTo('guide-master'); return false;">マスター管理</a>
+      <a href="#" class="manual-toc-link" data-section="guide-reports" onclick="Manual.scrollTo('guide-reports'); return false;">レポート・CSV出力</a>
+      <a href="#" class="manual-toc-link" data-section="guide-faq" onclick="Manual.scrollTo('guide-faq'); return false;">よくある質問 (FAQ)</a>
+    </nav>
+  </aside>
+
+  <!-- メインコンテンツ -->
+  <div class="manual-content" id="manualContent">
+
+    <!-- ページヘッダー -->
+    <div class="page-header" style="margin-bottom: var(--spacing-xl);">
+      <h2 class="page-title">マニュアル</h2>
+      <p class="page-subtitle">導入手順書 & 取扱説明書</p>
+    </div>
+
+    <!-- タブ切り替え（モバイル用） -->
+    <div class="manual-tab-bar">
+      <button class="manual-tab active" onclick="Manual.switchTab('setup')">導入手順書</button>
+      <button class="manual-tab" onclick="Manual.switchTab('guide')">取扱説明書</button>
+    </div>
+
+    <!-- ============================================================
+         第1部: 導入手順書
+         ============================================================ -->
+    <div class="manual-part" id="manualPartSetup">
+      <div class="manual-part-header">
+        <div class="manual-part-icon">&#x1F4CB;</div>
+        <div>
+          <h2 class="manual-part-title">導入手順書</h2>
+          <p class="manual-part-desc">本システムの導入に必要な準備と設定手順を説明します。</p>
+        </div>
+      </div>
+
+      <!-- 概要・前提条件 -->
+      <section class="manual-section" id="setup-overview">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F4D6;</span>
+          概要・前提条件
+        </h3>
+
+        <div class="manual-card">
+          <h4 class="manual-card-title">このシステムでできること</h4>
+          <p>「木材在庫管理システム」は、一枚板・木材製品の仕入れから販売までを一元管理するWebアプリケーションです。</p>
+          <div class="manual-feature-grid">
+            <div class="manual-feature-item">
+              <span class="manual-feature-icon">&#x1F4E6;</span>
+              <div>
+                <strong>製品管理</strong>
+                <p>写真付きで製品情報を登録・編集。サイズ・樹種・価格をまとめて管理。</p>
+              </div>
+            </div>
+            <div class="manual-feature-item">
+              <span class="manual-feature-icon">&#x1F4B0;</span>
+              <div>
+                <strong>販売管理</strong>
+                <p>販売処理・販売履歴の管理。利益率を自動計算。</p>
+              </div>
+            </div>
+            <div class="manual-feature-item">
+              <span class="manual-feature-icon">&#x1F4CB;</span>
+              <div>
+                <strong>棚卸し</strong>
+                <p>保管場所ごとの棚卸し機能で在庫を正確に把握。</p>
+              </div>
+            </div>
+            <div class="manual-feature-item">
+              <span class="manual-feature-icon">&#x1F4CA;</span>
+              <div>
+                <strong>レポート</strong>
+                <p>売上統計・在庫レポート・CSV出力で経営判断をサポート。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="manual-card">
+          <h4 class="manual-card-title">必要なもの</h4>
+          <div class="manual-checklist">
+            <label class="manual-checklist-item">
+              <input type="checkbox">
+              <span>Google アカウント（Gmail）</span>
+            </label>
+            <label class="manual-checklist-item">
+              <input type="checkbox">
+              <span>PC またはスマートフォン（Google Chrome 推奨）</span>
+            </label>
+            <label class="manual-checklist-item">
+              <input type="checkbox">
+              <span>インターネット接続</span>
+            </label>
+          </div>
+          <div class="manual-callout manual-callout-info">
+            <span class="manual-callout-icon">&#x1F4A1;</span>
+            <div>
+              <strong>ポイント</strong>
+              <p>このシステムは Google Apps Script と Google スプレッドシートで動作するため、サーバー費用は無料です。Google アカウントがあればすぐに始められます。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 1 -->
+      <section class="manual-section" id="setup-step1">
+        <h3 class="manual-section-title">
+          <span class="manual-step-badge">1</span>
+          Step 1: Google スプレッドシートの準備
+        </h3>
+
+        <div class="manual-card">
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">1-1</div>
+              <div class="manual-step-content">
+                <h4>Google ドライブを開く</h4>
+                <p>ブラウザで <strong>Google ドライブ</strong>（drive.google.com）を開き、Google アカウントでログインしてください。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">1-2</div>
+              <div class="manual-step-content">
+                <h4>新しいスプレッドシートを作成</h4>
+                <p>左上の「<strong>+ 新規</strong>」ボタンをクリックし、「<strong>Google スプレッドシート</strong>」を選択して空のスプレッドシートを作成します。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">1-3</div>
+              <div class="manual-step-content">
+                <h4>名前を付ける</h4>
+                <p>スプレッドシートのタイトル（左上）をクリックして、わかりやすい名前を入力してください。</p>
+                <div class="manual-example-box">
+                  例: <code>木材在庫管理データ</code>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">1-4</div>
+              <div class="manual-step-content">
+                <h4>スプレッドシートIDをメモ</h4>
+                <p>ブラウザのアドレスバーに表示されているURLから、<strong>スプレッドシートID</strong>をコピーしてメモしておきます。</p>
+                <div class="manual-example-box">
+                  URL例: https://docs.google.com/spreadsheets/d/<strong class="manual-highlight">1AbCdEfGhIjKlMnOpQrStUvWxYz</strong>/edit<br>
+                  <br>
+                  太字の部分（<code>/d/</code>と<code>/edit</code>の間）がスプレッドシートIDです。
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="manual-callout manual-callout-warning">
+            <span class="manual-callout-icon">&#x26A0;&#xFE0F;</span>
+            <div>
+              <strong>注意</strong>
+              <p>スプレッドシートIDは後の手順で必ず必要になります。正確にコピーしてください。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2 -->
+      <section class="manual-section" id="setup-step2">
+        <h3 class="manual-section-title">
+          <span class="manual-step-badge">2</span>
+          Step 2: Apps Script にコードを設置
+        </h3>
+
+        <div class="manual-card">
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">2-1</div>
+              <div class="manual-step-content">
+                <h4>Apps Script エディタを開く</h4>
+                <p>スプレッドシートのメニューバーで「<strong>拡張機能</strong>」 > 「<strong>Apps Script</strong>」を選択します。新しいタブで Apps Script エディタが開きます。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">2-2</div>
+              <div class="manual-step-content">
+                <h4>プロジェクト名を設定</h4>
+                <p>左上の「無題のプロジェクト」をクリックし、「<strong>木材在庫管理システム</strong>」と入力して名前を付けます。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">2-3</div>
+              <div class="manual-step-content">
+                <h4>ソースコードを配置</h4>
+                <p>提供されたソースファイルを Apps Script プロジェクトに配置します。以下の全ファイルが必要です。</p>
+                <div class="manual-file-list">
+                  <div class="manual-file-item">
+                    <span class="manual-file-icon">&#x1F4C4;</span>
+                    <div>
+                      <code>Code.gs</code>
+                      <small>バックエンド処理（サーバーサイド）</small>
+                    </div>
+                  </div>
+                  <div class="manual-file-item">
+                    <span class="manual-file-icon">&#x1F310;</span>
+                    <div>
+                      <code>index.html</code>
+                      <small>メインページ</small>
+                    </div>
+                  </div>
+                  <div class="manual-file-item">
+                    <span class="manual-file-icon">&#x1F3A8;</span>
+                    <div>
+                      <code>styles-*.html</code> <small>(3ファイル)</small>
+                      <small>デザイン定義</small>
+                    </div>
+                  </div>
+                  <div class="manual-file-item">
+                    <span class="manual-file-icon">&#x1F9E9;</span>
+                    <div>
+                      <code>template-*.html</code> <small>(9ファイル)</small>
+                      <small>各画面のテンプレート</small>
+                    </div>
+                  </div>
+                  <div class="manual-file-item">
+                    <span class="manual-file-icon">&#x2699;&#xFE0F;</span>
+                    <div>
+                      <code>scripts-*.html</code> <small>(3ファイル)</small>
+                      <small>フロントエンド処理</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">2-4</div>
+              <div class="manual-step-content">
+                <h4>HTMLファイルの追加方法</h4>
+                <p>Apps Script エディタの左側ファイル一覧の「<strong>+</strong>」アイコンをクリックし、「<strong>HTML</strong>」を選択します。ファイル名を入力し（拡張子 .html は自動付与）、内容を貼り付けてください。</p>
+                <div class="manual-callout manual-callout-info">
+                  <span class="manual-callout-icon">&#x1F4A1;</span>
+                  <div>
+                    <strong>ヒント</strong>
+                    <p>ファイル名は正確に入力してください。例えば <code>template-manual</code> と入力すると <code>template-manual.html</code> が作成されます。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 3 -->
+      <section class="manual-section" id="setup-step3">
+        <h3 class="manual-section-title">
+          <span class="manual-step-badge">3</span>
+          Step 3: 初期セットアップの実行
+        </h3>
+
+        <div class="manual-card">
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">3-1</div>
+              <div class="manual-step-content">
+                <h4>スプレッドシートIDを設定</h4>
+                <p>Apps Script エディタの上部にある関数選択ドロップダウンで「<strong>setupSpreadsheetId</strong>」を選び、<strong>実行</strong>ボタン（&#x25B6;）をクリックします。</p>
+                <div class="manual-callout manual-callout-warning">
+                  <span class="manual-callout-icon">&#x26A0;&#xFE0F;</span>
+                  <div>
+                    <strong>初回実行時の権限承認</strong>
+                    <p>初めて実行する際、Google から権限の承認を求められます。「<strong>権限を確認</strong>」をクリック → アカウントを選択 → 「<strong>詳細</strong>」 → 「<strong>～（安全ではないページ）に移動</strong>」 → 「<strong>許可</strong>」の順にクリックしてください。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">3-2</div>
+              <div class="manual-step-content">
+                <h4>データシートを自動作成</h4>
+                <p>同じ要領で関数「<strong>setupAllSheets</strong>」を選択して実行します。スプレッドシートに必要なシート（製品、仕入れ先、加工業者など）が自動で作成されます。</p>
+                <div class="manual-callout manual-callout-success">
+                  <span class="manual-callout-icon">&#x2705;</span>
+                  <div>
+                    <strong>確認ポイント</strong>
+                    <p>スプレッドシートを開き、複数のシートタブ（「製品」「樹種」「仕入れ先」など）が作成されていれば成功です。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 4 -->
+      <section class="manual-section" id="setup-step4">
+        <h3 class="manual-section-title">
+          <span class="manual-step-badge">4</span>
+          Step 4: Webアプリとして公開
+        </h3>
+
+        <div class="manual-card">
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">4-1</div>
+              <div class="manual-step-content">
+                <h4>デプロイを作成</h4>
+                <p>Apps Script エディタ右上の「<strong>デプロイ</strong>」ボタンをクリックし、「<strong>新しいデプロイ</strong>」を選択します。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">4-2</div>
+              <div class="manual-step-content">
+                <h4>種類を選択</h4>
+                <p>「種類の選択」の隣にある歯車アイコン（&#x2699;&#xFE0F;）をクリックし、「<strong>ウェブアプリ</strong>」を選択します。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">4-3</div>
+              <div class="manual-step-content">
+                <h4>アクセス設定</h4>
+                <p>以下のように設定してください。</p>
+                <div class="manual-table-wrapper">
+                  <table class="manual-setting-table">
+                    <tr>
+                      <th>説明</th>
+                      <td>木材在庫管理システム v1.0（任意）</td>
+                    </tr>
+                    <tr>
+                      <th>次のユーザーとして実行</th>
+                      <td><strong>自分</strong></td>
+                    </tr>
+                    <tr>
+                      <th>アクセスできるユーザー</th>
+                      <td><strong>自分のみ</strong>（または組織内のユーザー）</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">4-4</div>
+              <div class="manual-step-content">
+                <h4>URLを取得してアクセス</h4>
+                <p>「<strong>デプロイ</strong>」ボタンをクリックすると、<strong>ウェブアプリURL</strong>が発行されます。このURLをブックマークしておきましょう。</p>
+                <div class="manual-callout manual-callout-success">
+                  <span class="manual-callout-icon">&#x1F389;</span>
+                  <div>
+                    <strong>おめでとうございます!</strong>
+                    <p>URLにアクセスすると、木材在庫管理システムが表示されます。スマートフォンのホーム画面に追加すれば、アプリのように使えます。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 5 -->
+      <section class="manual-section" id="setup-step5">
+        <h3 class="manual-section-title">
+          <span class="manual-step-badge">5</span>
+          Step 5: マスターデータの初期登録
+        </h3>
+
+        <div class="manual-card">
+          <p>システムを使い始める前に、以下のマスターデータを登録しておくと便利です。</p>
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">5-1</div>
+              <div class="manual-step-content">
+                <h4>樹種を登録</h4>
+                <p>サイドメニュー「<strong>マスター管理</strong>」を開き、「<strong>樹種</strong>」タブで取り扱う樹種を登録します。</p>
+                <div class="manual-example-box">
+                  登録例: ウォルナット、ケヤキ、トチ、サクラ、ナラ　など
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">5-2</div>
+              <div class="manual-step-content">
+                <h4>仕入れ先を登録</h4>
+                <p>「<strong>仕入れ先</strong>」タブで、木材を仕入れる業者の情報を登録します。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">5-3</div>
+              <div class="manual-step-content">
+                <h4>加工業者を登録</h4>
+                <p>「<strong>加工業者</strong>」タブで、カンナがけや乾燥などの加工を依頼する業者を登録します。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">5-4</div>
+              <div class="manual-step-content">
+                <h4>保管場所を登録</h4>
+                <p>「<strong>保管場所</strong>」タブで、倉庫・店舗など木材を保管する場所を登録します。</p>
+                <div class="manual-example-box">
+                  登録例: 第1倉庫、第2倉庫、店舗展示スペース　など
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="manual-callout manual-callout-info">
+            <span class="manual-callout-icon">&#x1F4A1;</span>
+            <div>
+              <strong>ポイント</strong>
+              <p>マスターデータは後からいつでも追加・編集できます。最初は最低限の登録で大丈夫です。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /manualPartSetup -->
+
+
+    <!-- ============================================================
+         第2部: 取扱説明書
+         ============================================================ -->
+    <div class="manual-part" id="manualPartGuide">
+      <div class="manual-part-header">
+        <div class="manual-part-icon">&#x1F4D6;</div>
+        <div>
+          <h2 class="manual-part-title">取扱説明書</h2>
+          <p class="manual-part-desc">各画面の操作方法を詳しく説明します。</p>
+        </div>
+      </div>
+
+      <!-- 画面構成 -->
+      <section class="manual-section" id="guide-home">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F3E0;</span>
+          画面構成・ナビゲーション
+        </h3>
+        <div class="manual-card">
+          <h4 class="manual-card-title">画面の基本構成</h4>
+          <div class="manual-diagram">
+            <div class="manual-diagram-header">&#x1F4BB; ヘッダー（アプリ名・メニューボタン）</div>
+            <div class="manual-diagram-body">
+              <div class="manual-diagram-sidebar">&#x2630; サイドバー<br>(PC表示時)</div>
+              <div class="manual-diagram-main">メインコンテンツ<br>（各ページの内容）</div>
+            </div>
+            <div class="manual-diagram-footer">&#x1F4F1; モバイルナビゲーション（スマホ表示時）</div>
+          </div>
+
+          <div class="manual-nav-guide">
+            <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">メニュー一覧</h4>
+            <div class="manual-nav-items">
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x1F4CA;</span>
+                <strong>ダッシュボード</strong>
+                <p>売上や在庫の概況を確認</p>
+              </div>
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x1F4E6;</span>
+                <strong>製品一覧</strong>
+                <p>登録済み製品を検索・閲覧</p>
+              </div>
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x2795;</span>
+                <strong>製品登録</strong>
+                <p>新しい製品を登録</p>
+              </div>
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x1F4CB;</span>
+                <strong>棚卸し</strong>
+                <p>在庫の実地確認</p>
+              </div>
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x1F4B0;</span>
+                <strong>販売済み</strong>
+                <p>販売履歴の確認・分析</p>
+              </div>
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x2699;&#xFE0F;</span>
+                <strong>マスター管理</strong>
+                <p>樹種・業者・場所などの基本設定</p>
+              </div>
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x1F4C8;</span>
+                <strong>レポート</strong>
+                <p>CSV出力・カタログ生成</p>
+              </div>
+              <div class="manual-nav-item-card">
+                <span class="manual-nav-item-icon">&#x1F4D6;</span>
+                <strong>マニュアル</strong>
+                <p>このページ（使い方ガイド）</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ダッシュボード -->
+      <section class="manual-section" id="guide-dashboard">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F4CA;</span>
+          ダッシュボード
+        </h3>
+        <div class="manual-card">
+          <p>アプリを開くと最初に表示される画面です。在庫と売上の概況を一目で確認できます。</p>
+
+          <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">表示される情報</h4>
+          <div class="manual-info-grid">
+            <div class="manual-info-item">
+              <div class="manual-info-label">在庫数</div>
+              <div class="manual-info-desc">現在販売中の製品数</div>
+            </div>
+            <div class="manual-info-item">
+              <div class="manual-info-label">在庫総額</div>
+              <div class="manual-info-desc">販売中製品の合計金額</div>
+            </div>
+            <div class="manual-info-item">
+              <div class="manual-info-label">今月の販売数</div>
+              <div class="manual-info-desc">当月に販売した製品数</div>
+            </div>
+            <div class="manual-info-item">
+              <div class="manual-info-label">今月の売上</div>
+              <div class="manual-info-desc">当月の売上合計金額</div>
+            </div>
+          </div>
+
+          <div class="manual-callout manual-callout-info">
+            <span class="manual-callout-icon">&#x1F4A1;</span>
+            <div>
+              <strong>使いこなしポイント</strong>
+              <p>ダッシュボードは毎日の業務開始時にチェックすると、在庫状況や売上推移をすぐに把握できます。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 製品登録 -->
+      <section class="manual-section" id="guide-register">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x2795;</span>
+          製品登録
+        </h3>
+        <div class="manual-card">
+          <p>新しく仕入れた木材・一枚板の情報を登録します。</p>
+
+          <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">登録手順</h4>
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">1</div>
+              <div class="manual-step-content">
+                <h4>メニューから「製品登録」を開く</h4>
+                <p>サイドメニュー、またはモバイルナビの「<strong>+</strong>」（登録）をタップします。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">2</div>
+              <div class="manual-step-content">
+                <h4>基本情報を入力</h4>
+                <p>以下の項目を入力します。<strong class="text-error">*</strong> 印は必須です。</p>
+                <div class="manual-table-wrapper">
+                  <table class="manual-setting-table">
+                    <tr>
+                      <th>製品名 <strong class="text-error">*</strong></th>
+                      <td>例: 「ウォルナット一枚板 W1500」</td>
+                    </tr>
+                    <tr>
+                      <th>樹種 <strong class="text-error">*</strong></th>
+                      <td>マスターから選択</td>
+                    </tr>
+                    <tr>
+                      <th>仕入れ先</th>
+                      <td>マスターから選択</td>
+                    </tr>
+                    <tr>
+                      <th>仕入日</th>
+                      <td>日付を選択（初期値: 今日）</td>
+                    </tr>
+                    <tr>
+                      <th>仕入れ価格</th>
+                      <td>税抜きの仕入れ金額</td>
+                    </tr>
+                    <tr>
+                      <th>保管場所</th>
+                      <td>マスターから選択</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">3</div>
+              <div class="manual-step-content">
+                <h4>写真を撮影・添付</h4>
+                <p>入荷時の写真と仕上がり後の写真を登録できます。</p>
+                <div class="manual-two-col">
+                  <div class="manual-method-box">
+                    <strong>&#x1F4F7; カメラ撮影</strong>
+                    <p>「カメラ撮影」ボタンをタップするとカメラが起動します。撮影するとそのまま添付されます。</p>
+                  </div>
+                  <div class="manual-method-box">
+                    <strong>&#x1F4C1; ファイル選択</strong>
+                    <p>「ファイルを選択」ボタンから、端末に保存済みの画像を選択して添付します。</p>
+                  </div>
+                </div>
+                <div class="manual-callout manual-callout-info">
+                  <span class="manual-callout-icon">&#x1F4A1;</span>
+                  <div>
+                    <strong>対応形式</strong>
+                    <p>JPEG / PNG / WebP 形式、5MB以下の画像ファイルに対応しています。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">4</div>
+              <div class="manual-step-content">
+                <h4>サイズ情報を入力</h4>
+                <p>「入荷時サイズ」と「仕上がりサイズ」の<strong>長さ・幅・厚み</strong>をmm単位で入力します。仕上がりサイズは加工後に入力できます。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">5</div>
+              <div class="manual-step-content">
+                <h4>価格・加工費を入力</h4>
+                <p><strong>仕入れ価格</strong>・<strong>送料</strong>・<strong>利益率</strong>を入力すると、販売価格（税込）が自動計算されてプレビュー表示されます。</p>
+                <p>加工費がある場合は「<strong>加工費を追加</strong>」ボタンで明細を追加できます。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">6</div>
+              <div class="manual-step-content">
+                <h4>登録ボタンをクリック</h4>
+                <p>入力が完了したら、画面下部の「<strong>登録する</strong>」ボタンをクリックします。登録が成功すると製品詳細画面に遷移します。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 製品一覧・検索 -->
+      <section class="manual-section" id="guide-list">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F4E6;</span>
+          製品一覧・検索
+        </h3>
+        <div class="manual-card">
+          <p>登録済みの全製品を一覧で確認し、絞り込み検索ができます。</p>
+
+          <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">検索・フィルター機能</h4>
+          <div class="manual-table-wrapper">
+            <table class="manual-setting-table">
+              <tr>
+                <th>キーワード検索</th>
+                <td>製品名で自由に検索</td>
+              </tr>
+              <tr>
+                <th>樹種フィルター</th>
+                <td>特定の樹種のみ表示</td>
+              </tr>
+              <tr>
+                <th>ステータスフィルター</th>
+                <td>「販売中」「販売済み」などで絞り込み</td>
+              </tr>
+              <tr>
+                <th>並び替え</th>
+                <td>登録日・価格・在庫日数で並び替え</td>
+              </tr>
+            </table>
+          </div>
+          <p style="margin-top: var(--spacing-md);">製品カードをタップすると<strong>製品詳細画面</strong>に遷移します。</p>
+        </div>
+      </section>
+
+      <!-- 製品詳細・編集 -->
+      <section class="manual-section" id="guide-detail">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F50D;</span>
+          製品詳細・編集
+        </h3>
+        <div class="manual-card">
+          <p>製品の全情報を確認し、各種操作ができます。</p>
+          <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">操作ボタン一覧</h4>
+          <div class="manual-action-list">
+            <div class="manual-action-item">
+              <span class="manual-action-badge manual-action-edit">編集</span>
+              <p>製品情報を修正します。登録フォームが編集モードで開きます。</p>
+            </div>
+            <div class="manual-action-item">
+              <span class="manual-action-badge manual-action-sell">販売</span>
+              <p>販売処理を行います（後述）。</p>
+            </div>
+            <div class="manual-action-item">
+              <span class="manual-action-badge manual-action-delete">削除</span>
+              <p>製品を論理削除します。削除理由の入力が必要です。データは完全には消えません。</p>
+            </div>
+          </div>
+
+          <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">確認できる情報</h4>
+          <ul class="manual-bullet-list">
+            <li>基本情報（製品名・樹種・仕入れ先・保管場所）</li>
+            <li>写真（入荷時 / 仕上がり後）</li>
+            <li>サイズ情報（入荷時 / 仕上がり後）</li>
+            <li>価格情報（仕入れ価格・加工費・販売価格）</li>
+            <li>加工費明細</li>
+            <li>在庫日数（仕入れからの経過日数を自動計算）</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 販売処理 -->
+      <section class="manual-section" id="guide-sell">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F4B0;</span>
+          販売処理
+        </h3>
+        <div class="manual-card">
+          <p>製品が売れた際の販売処理方法です。</p>
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">1</div>
+              <div class="manual-step-content">
+                <h4>製品詳細画面を開く</h4>
+                <p>製品一覧から該当製品をタップし、詳細画面を開きます。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">2</div>
+              <div class="manual-step-content">
+                <h4>「販売」ボタンをクリック</h4>
+                <p>販売確認モーダルが表示されます。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">3</div>
+              <div class="manual-step-content">
+                <h4>販売情報を入力</h4>
+                <div class="manual-table-wrapper">
+                  <table class="manual-setting-table">
+                    <tr>
+                      <th>販売価格</th>
+                      <td>実際の販売金額を入力（提案価格が初期値）</td>
+                    </tr>
+                    <tr>
+                      <th>販売日</th>
+                      <td>販売した日付（初期値: 今日）</td>
+                    </tr>
+                    <tr>
+                      <th>販売先</th>
+                      <td>お客様名など（任意）</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">4</div>
+              <div class="manual-step-content">
+                <h4>「販売確定」をクリック</h4>
+                <p>ステータスが「<strong>販売済み</strong>」に変わり、販売履歴に記録されます。</p>
+              </div>
+            </div>
+          </div>
+          <div class="manual-callout manual-callout-warning">
+            <span class="manual-callout-icon">&#x26A0;&#xFE0F;</span>
+            <div>
+              <strong>販売キャンセルについて</strong>
+              <p>販売後 <strong>7日以内</strong> であれば、製品詳細画面からキャンセルが可能です。キャンセル理由の入力が必要です。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 販売済み一覧 -->
+      <section class="manual-section" id="guide-sales-list">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F4B0;</span>
+          販売済み一覧
+        </h3>
+        <div class="manual-card">
+          <p>販売履歴の確認と売上分析ができます。</p>
+          <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">フィルター機能</h4>
+          <div class="manual-table-wrapper">
+            <table class="manual-setting-table">
+              <tr>
+                <th>期間指定</th>
+                <td>開始日〜終了日を指定して絞り込み（初期値: 今月）</td>
+              </tr>
+              <tr>
+                <th>樹種フィルター</th>
+                <td>特定の樹種のみ表示</td>
+              </tr>
+            </table>
+          </div>
+          <h4 class="manual-card-title" style="margin-top: var(--spacing-lg);">統計サマリー</h4>
+          <p>フィルター条件に該当する販売データの集計値が画面上部に表示されます。</p>
+          <div class="manual-info-grid">
+            <div class="manual-info-item">
+              <div class="manual-info-label">販売数</div>
+              <div class="manual-info-desc">該当期間の総販売数</div>
+            </div>
+            <div class="manual-info-item">
+              <div class="manual-info-label">売上総額</div>
+              <div class="manual-info-desc">販売金額の合計</div>
+            </div>
+            <div class="manual-info-item">
+              <div class="manual-info-label">利益</div>
+              <div class="manual-info-desc">売上から原価を差し引いた利益</div>
+            </div>
+            <div class="manual-info-item">
+              <div class="manual-info-label">平均利益率</div>
+              <div class="manual-info-desc">利益率の平均値</div>
+            </div>
+          </div>
+          <p style="margin-top: var(--spacing-md);">「<strong>CSV出力</strong>」ボタンで販売データをCSVファイルとしてダウンロードできます。</p>
+        </div>
+      </section>
+
+      <!-- 棚卸し -->
+      <section class="manual-section" id="guide-inventory">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F4CB;</span>
+          棚卸し
+        </h3>
+        <div class="manual-card">
+          <p>保管場所ごとに在庫の実地確認を行う機能です。</p>
+
+          <div class="manual-steps">
+            <div class="manual-step">
+              <div class="manual-step-number">1</div>
+              <div class="manual-step-content">
+                <h4>棚卸し画面を開く</h4>
+                <p>メニューから「<strong>棚卸し</strong>」を選択します。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">2</div>
+              <div class="manual-step-content">
+                <h4>保管場所を選択してセッション開始</h4>
+                <p>棚卸しする保管場所を選び、「<strong>棚卸し開始</strong>」ボタンをクリックします。</p>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">3</div>
+              <div class="manual-step-content">
+                <h4>製品を確認</h4>
+                <p>表示される製品一覧に対し、実際に現物があるか1点ずつ確認し、「<strong>確認済み</strong>」ボタンをタップします。</p>
+                <div class="manual-callout manual-callout-info">
+                  <span class="manual-callout-icon">&#x1F4A1;</span>
+                  <div>
+                    <strong>確認方法</strong>
+                    <p>製品IDを目視で照合するか、登録写真と実物を見比べて確認してください。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="manual-step">
+              <div class="manual-step-number">4</div>
+              <div class="manual-step-content">
+                <h4>棚卸し完了</h4>
+                <p>全製品の確認が完了したら「<strong>棚卸し完了</strong>」ボタンをクリックします。差異があった場合は自動で記録されます。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- マスター管理 -->
+      <section class="manual-section" id="guide-master">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x2699;&#xFE0F;</span>
+          マスター管理
+        </h3>
+        <div class="manual-card">
+          <p>製品登録時に選択する各種マスターデータ（基本設定）を管理します。</p>
+          <div class="manual-master-tabs">
+            <div class="manual-master-tab">
+              <h4>&#x1F333; 樹種</h4>
+              <p>木材の種類を管理します。製品登録時の選択肢に反映されます。</p>
+              <div class="manual-example-box">
+                操作: 新規登録 / 編集（名前・表示順）
+              </div>
+            </div>
+            <div class="manual-master-tab">
+              <h4>&#x1F69A; 仕入れ先</h4>
+              <p>木材を仕入れる業者を管理します。</p>
+              <div class="manual-example-box">
+                操作: 新規登録 / 編集（名前・連絡先・住所）
+              </div>
+            </div>
+            <div class="manual-master-tab">
+              <h4>&#x1FA9A; 加工業者</h4>
+              <p>加工を依頼する業者と対応可能な加工種別を管理します。</p>
+              <div class="manual-example-box">
+                加工種別: カンナ / 乾燥 / 塗装 / 脚取り付け / 研磨 / 補修 / その他
+              </div>
+            </div>
+            <div class="manual-master-tab">
+              <h4>&#x1F4CD; 保管場所</h4>
+              <p>製品の保管場所を管理します。棚卸しの単位にもなります。</p>
+              <div class="manual-example-box">
+                操作: 新規登録 / 編集（名前・表示順）
+              </div>
+            </div>
+          </div>
+
+          <div class="manual-callout manual-callout-info">
+            <span class="manual-callout-icon">&#x1F4A1;</span>
+            <div>
+              <strong>編集と新規登録の違い</strong>
+              <p>既存データの「<strong>編集</strong>」ボタンをクリックすると内容を上書き更新します。「<strong>新規登録</strong>」ボタンはデータを新しく追加します。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- レポート・CSV出力 -->
+      <section class="manual-section" id="guide-reports">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x1F4C8;</span>
+          レポート・CSV出力
+        </h3>
+        <div class="manual-card">
+          <p>各種データのエクスポートと帳票出力ができます。</p>
+          <div class="manual-table-wrapper">
+            <table class="manual-setting-table">
+              <tr>
+                <th>在庫一覧CSV</th>
+                <td>現在の在庫データをCSV形式でダウンロード。Excel等で開けます。</td>
+              </tr>
+              <tr>
+                <th>販売実績CSV</th>
+                <td>販売履歴をCSV形式でダウンロード。売上分析に活用できます。</td>
+              </tr>
+              <tr>
+                <th>カタログPDF</th>
+                <td>販売中の製品をPDFカタログとして生成。お客様への提案資料に。</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="manual-section" id="guide-faq">
+        <h3 class="manual-section-title">
+          <span class="manual-section-icon">&#x2753;</span>
+          よくある質問 (FAQ)
+        </h3>
+        <div class="manual-card">
+          <div class="manual-faq-list">
+
+            <details class="manual-faq-item">
+              <summary class="manual-faq-question">
+                データはどこに保存されますか?
+              </summary>
+              <div class="manual-faq-answer">
+                <p>すべてのデータは、あなたの Google アカウントに紐づいた <strong>Google スプレッドシート</strong> に保存されます。写真は <strong>Google ドライブ</strong> に保存されます。外部サーバーにデータが送られることはありません。</p>
+              </div>
+            </details>
+
+            <details class="manual-faq-item">
+              <summary class="manual-faq-question">
+                スマートフォンでも使えますか?
+              </summary>
+              <div class="manual-faq-answer">
+                <p>はい、スマートフォン・タブレットの <strong>ブラウザ</strong>（Chrome推奨）からアクセスして使えます。画面下部にモバイル用ナビゲーションが表示されます。ホーム画面に追加すればアプリのように使えます。</p>
+              </div>
+            </details>
+
+            <details class="manual-faq-item">
+              <summary class="manual-faq-question">
+                削除した製品は元に戻せますか?
+              </summary>
+              <div class="manual-faq-answer">
+                <p>本システムの削除は「<strong>論理削除</strong>」です。データ自体はスプレッドシートに残っており、ステータスが「削除済み」に変わります。スプレッドシートから直接ステータスを「販売中」に戻せば復元できます。</p>
+              </div>
+            </details>
+
+            <details class="manual-faq-item">
+              <summary class="manual-faq-question">
+                複数人で同時に使えますか?
+              </summary>
+              <div class="manual-faq-answer">
+                <p>Webアプリのアクセス権限設定で「組織内のユーザー」を選択すれば、同じ Google Workspace 組織内のメンバーが利用できます。ただし、同時編集時にデータの競合が起こる可能性があるため、同じ製品を同時に操作するのは避けてください。</p>
+              </div>
+            </details>
+
+            <details class="manual-faq-item">
+              <summary class="manual-faq-question">
+                カメラが起動しません
+              </summary>
+              <div class="manual-faq-answer">
+                <p>以下を確認してください。</p>
+                <ul class="manual-bullet-list">
+                  <li>ブラウザの<strong>カメラ権限</strong>が許可されているか確認（設定 > サイトの設定 > カメラ）</li>
+                  <li>HTTPSでアクセスしているか確認（Google Apps Script のWebアプリは通常HTTPS）</li>
+                  <li>他のアプリがカメラを使用中でないか確認</li>
+                  <li>カメラが利用できない場合は「ファイルを選択」ボタンで画像を添付してください</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="manual-faq-item">
+              <summary class="manual-faq-question">
+                価格の計算式はどうなっていますか?
+              </summary>
+              <div class="manual-faq-answer">
+                <p>販売価格は以下の計算式で自動算出されます。</p>
+                <div class="manual-formula">
+                  <strong>トータル原価</strong> = 仕入れ価格 + 加工費合計 + 送料<br>
+                  <strong>販売価格（税抜）</strong> = トータル原価 &divide; (1 - 利益率%)<br>
+                  <strong>販売価格（税込）</strong> = 販売価格（税抜） &times; 1.10 + 価格調整
+                </div>
+                <p>利益率の初期値は <strong>60%</strong> です。製品ごとに変更できます。</p>
+              </div>
+            </details>
+
+            <details class="manual-faq-item">
+              <summary class="manual-faq-question">
+                アプリを更新するには?
+              </summary>
+              <div class="manual-faq-answer">
+                <p>ソースコードを更新した場合は、Apps Script エディタで「<strong>デプロイ</strong>」 > 「<strong>デプロイを管理</strong>」を開き、既存のデプロイの鉛筆アイコン（編集）をクリックして「<strong>バージョン</strong>」を「<strong>新バージョン</strong>」に変更し、「<strong>デプロイ</strong>」ボタンを押してください。</p>
+              </div>
+            </details>
+
+          </div><!-- /manual-faq-list -->
+        </div>
+      </section>
+
+    </div><!-- /manualPartGuide -->
+
+    <!-- フッター -->
+    <div class="manual-footer">
+      <p>木材在庫管理システム マニュアル</p>
+      <p class="text-muted">ご不明な点があれば管理者にお問い合わせください。</p>
+    </div>
+
+  </div><!-- /manual-content -->
+</div><!-- /manual-layout -->
+
+
+<!-- ============================================================
+     マニュアル専用スタイル
+     ============================================================ -->
+<style>
+/* ==================== レイアウト ==================== */
+.manual-layout {
+  display: flex;
+  gap: var(--spacing-lg);
+  position: relative;
+}
+
+.manual-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ==================== 目次サイドパネル ==================== */
+.manual-toc {
+  display: none;
+  width: 240px;
+  flex-shrink: 0;
+  position: sticky;
+  top: calc(var(--header-height) + var(--spacing-lg));
+  max-height: calc(100vh - var(--header-height) - var(--spacing-xl) * 2);
+  overflow-y: auto;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+}
+
+.manual-toc-header {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-primary);
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-primary-light);
+}
+
+.manual-toc-section-title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--spacing-md) 0 var(--spacing-xs) 0;
+}
+
+.manual-toc-link {
+  display: block;
+  padding: 6px var(--spacing-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  line-height: 1.4;
+}
+
+.manual-toc-link:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.manual-toc-link.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+@media (min-width: 1200px) {
+  .manual-toc {
+    display: block;
+  }
+}
+
+/* ==================== タブバー（モバイル用） ==================== */
+.manual-tab-bar {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xl);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+}
+
+.manual-tab {
+  flex: 1;
+  padding: 12px var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.manual-tab.active {
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.manual-tab:hover:not(.active) {
+  color: var(--color-text-primary);
+}
+
+@media (min-width: 1200px) {
+  .manual-tab-bar {
+    display: none;
+  }
+}
+
+/* ==================== パートヘッダー ==================== */
+.manual-part {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.manual-part-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border-radius: var(--radius-lg);
+  color: white;
+  margin-bottom: var(--spacing-xl);
+}
+
+.manual-part-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.manual-part-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+}
+
+.manual-part-desc {
+  font-size: var(--text-base);
+  opacity: 0.9;
+}
+
+/* ==================== セクション ==================== */
+.manual-section {
+  margin-bottom: var(--spacing-2xl);
+  scroll-margin-top: calc(var(--header-height) + var(--spacing-lg));
+}
+
+.manual-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-primary-light);
+}
+
+.manual-section-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.manual-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  border-radius: 50%;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ==================== カード ==================== */
+.manual-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.manual-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.manual-card-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin-bottom: var(--spacing-md);
+}
+
+/* ==================== ステップリスト ==================== */
+.manual-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.manual-step {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.manual-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+.manual-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.manual-step-content h4 {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.manual-step-content p {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+/* ==================== コールアウト ==================== */
+.manual-callout {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-top: var(--spacing-md);
+  line-height: var(--leading-relaxed);
+}
+
+.manual-callout-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.manual-callout strong {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
+.manual-callout p {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.manual-callout-info {
+  background: #E3F2FD;
+  border-left: 4px solid var(--color-info);
+}
+
+.manual-callout-warning {
+  background: #FFF3E0;
+  border-left: 4px solid var(--color-warning);
+}
+
+.manual-callout-success {
+  background: #E8F5E9;
+  border-left: 4px solid var(--color-success);
+}
+
+.manual-callout-danger {
+  background: #FFEBEE;
+  border-left: 4px solid var(--color-error);
+}
+
+/* ==================== 例・コードブロック ==================== */
+.manual-example-box {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.manual-example-box code {
+  background: var(--color-primary-light);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--color-primary-dark);
+}
+
+.manual-highlight {
+  background: #FFEB3B;
+  padding: 2px 4px;
+  border-radius: 2px;
+  color: #333;
+}
+
+/* ==================== テーブル ==================== */
+.manual-table-wrapper {
+  overflow-x: auto;
+  margin-top: var(--spacing-sm);
+}
+
+.manual-setting-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.manual-setting-table th,
+.manual-setting-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.manual-setting-table th {
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  width: 30%;
+  color: var(--color-text-primary);
+}
+
+.manual-setting-table td {
+  color: var(--color-text-secondary);
+}
+
+/* ==================== 機能グリッド ==================== */
+.manual-feature-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+@media (min-width: 600px) {
+  .manual-feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.manual-feature-item {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.manual-feature-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.manual-feature-item strong {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-primary);
+}
+
+.manual-feature-item p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ==================== チェックリスト ==================== */
+.manual-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+}
+
+.manual-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.manual-checklist-item:hover {
+  background: var(--color-primary-light);
+}
+
+.manual-checklist-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.manual-checklist-item span {
+  font-size: var(--text-base);
+}
+
+/* ==================== ファイルリスト ==================== */
+.manual-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.manual-file-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.manual-file-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.manual-file-item code {
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.manual-file-item small {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ==================== 画面構成ダイアグラム ==================== */
+.manual-diagram {
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin: var(--spacing-lg) 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
+.manual-diagram-header {
+  background: var(--color-primary);
+  color: white;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.manual-diagram-body {
+  display: flex;
+  min-height: 120px;
+}
+
+.manual-diagram-sidebar {
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border);
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.manual-diagram-main {
+  flex: 1;
+  padding: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: var(--color-bg-card);
+}
+
+.manual-diagram-footer {
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border);
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 500px) {
+  .manual-diagram-sidebar {
+    width: 80px;
+    font-size: var(--text-xs);
+  }
+}
+
+/* ==================== ナビガイド ==================== */
+.manual-nav-items {
+  display: grid;
+  gap: var(--spacing-sm);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 768px) {
+  .manual-nav-items {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.manual-nav-item-card {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.manual-nav-item-card:hover {
+  background: var(--color-primary-light);
+}
+
+.manual-nav-item-icon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
+.manual-nav-item-card strong {
+  display: block;
+  font-size: var(--text-sm);
+  margin-bottom: 2px;
+}
+
+.manual-nav-item-card p {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ==================== 情報グリッド ==================== */
+.manual-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+}
+
+@media (min-width: 768px) {
+  .manual-info-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.manual-info-item {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.manual-info-label {
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--color-primary-dark);
+  margin-bottom: var(--spacing-xs);
+}
+
+.manual-info-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ==================== 2カラム ==================== */
+.manual-two-col {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+@media (min-width: 600px) {
+  .manual-two-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.manual-method-box {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+.manual-method-box strong {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-primary);
+}
+
+.manual-method-box p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ==================== アクションリスト ==================== */
+.manual-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.manual-action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+}
+
+.manual-action-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.manual-action-edit {
+  background: #E3F2FD;
+  color: var(--color-info);
+}
+
+.manual-action-sell {
+  background: #E8F5E9;
+  color: var(--color-success);
+}
+
+.manual-action-delete {
+  background: #FFEBEE;
+  color: var(--color-error);
+}
+
+.manual-action-item p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  padding-top: 3px;
+}
+
+/* ==================== 箇条書き ==================== */
+.manual-bullet-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-sm) 0;
+}
+
+.manual-bullet-list li {
+  position: relative;
+  padding-left: var(--spacing-lg);
+  padding-top: var(--spacing-xs);
+  padding-bottom: var(--spacing-xs);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.manual-bullet-list li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary-light);
+  border-radius: 50%;
+}
+
+/* ==================== マスタータブ ==================== */
+.manual-master-tabs {
+  display: grid;
+  gap: var(--spacing-md);
+  margin: var(--spacing-md) 0;
+}
+
+@media (min-width: 600px) {
+  .manual-master-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.manual-master-tab {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+.manual-master-tab h4 {
+  font-size: var(--text-base);
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-primary);
+}
+
+.manual-master-tab p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* ==================== 計算式 ==================== */
+.manual-formula {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin: var(--spacing-md) 0;
+  font-family: 'Noto Sans JP', monospace;
+  font-size: var(--text-sm);
+  line-height: 2;
+}
+
+/* ==================== FAQ ==================== */
+.manual-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.manual-faq-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.manual-faq-item[open] {
+  border-color: var(--color-primary-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.manual-faq-question {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: background var(--transition-fast);
+  user-select: none;
+}
+
+.manual-faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.manual-faq-question::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 6px solid var(--color-primary);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.manual-faq-item[open] .manual-faq-question::before {
+  transform: rotate(90deg);
+}
+
+.manual-faq-question:hover {
+  background: var(--color-bg-secondary);
+}
+
+.manual-faq-answer {
+  padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  animation: fadeIn var(--transition-base) forwards;
+}
+
+.manual-faq-answer p {
+  margin-bottom: var(--spacing-sm);
+}
+
+/* ==================== フッター ==================== */
+.manual-footer {
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+  margin-top: var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.manual-footer p {
+  margin-bottom: var(--spacing-xs);
+}
+</style>

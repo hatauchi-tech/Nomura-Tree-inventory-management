@@ -147,6 +147,9 @@ const App = {
       case 'reports':
         await Reports.init();
         break;
+      case 'manual':
+        Manual.init();
+        break;
     }
   },
 
@@ -2567,6 +2570,85 @@ const Reports = {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  },
+};
+
+/**
+ * マニュアル
+ */
+const Manual = {
+  currentTab: 'setup',
+
+  init() {
+    // スクロール監視で目次のアクティブ項目を更新
+    const content = document.getElementById('manualContent');
+    if (content) {
+      content.addEventListener('scroll', () => this.updateTocActive(), { passive: true });
+    }
+    // ページ自体のスクロールも監視
+    window.addEventListener('scroll', () => this.updateTocActive(), { passive: true });
+  },
+
+  switchTab(tab) {
+    this.currentTab = tab;
+    const setupPart = document.getElementById('manualPartSetup');
+    const guidePart = document.getElementById('manualPartGuide');
+    const tabs = document.querySelectorAll('.manual-tab');
+
+    tabs.forEach(t => t.classList.remove('active'));
+
+    if (tab === 'setup') {
+      if (setupPart) setupPart.style.display = '';
+      if (guidePart) guidePart.style.display = 'none';
+      tabs[0]?.classList.add('active');
+    } else {
+      if (setupPart) setupPart.style.display = 'none';
+      if (guidePart) guidePart.style.display = '';
+      tabs[1]?.classList.add('active');
+    }
+  },
+
+  scrollTo(sectionId) {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // モバイルでタブを自動切り替え
+      if (sectionId.startsWith('setup-')) {
+        this.switchTab('setup');
+      } else if (sectionId.startsWith('guide-')) {
+        this.switchTab('guide');
+      }
+
+      // 目次のアクティブ状態を更新
+      this.setTocActive(sectionId);
+    }
+  },
+
+  setTocActive(sectionId) {
+    document.querySelectorAll('.manual-toc-link').forEach(link => {
+      link.classList.remove('active');
+      if (link.dataset.section === sectionId) {
+        link.classList.add('active');
+      }
+    });
+  },
+
+  updateTocActive() {
+    const sections = document.querySelectorAll('.manual-section');
+    let currentId = '';
+    const offset = 100;
+
+    sections.forEach(section => {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= offset) {
+        currentId = section.id;
+      }
+    });
+
+    if (currentId) {
+      this.setTocActive(currentId);
+    }
   },
 };
 
