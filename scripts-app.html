@@ -850,6 +850,78 @@ const ProductForm = {
     Toast.info('写真を削除しました');
   },
 
+  // カメラ撮影関連
+  cameraStream: null,
+  cameraPhotoType: null,
+
+  // カメラを開く（getUserMedia APIを使用）
+  async openCamera(type) {
+    this.cameraPhotoType = type;
+
+    // getUserMedia APIが利用可能か確認
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      // getUserMediaが使えない場合は従来のfile inputにフォールバック
+      const cameraInputId = type === 'raw' ? 'rawPhotoCamera' : 'finishedPhotoCamera';
+      document.getElementById(cameraInputId).click();
+      return;
+    }
+
+    try {
+      // カメラストリームを取得（背面カメラ優先）
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
+        audio: false,
+      });
+
+      const video = document.getElementById('cameraVideo');
+      video.srcObject = this.cameraStream;
+
+      // モーダルを表示
+      document.getElementById('cameraModal').classList.remove('hidden');
+    } catch (error) {
+      console.error('Camera access error:', error);
+      // カメラアクセス失敗時はfile inputにフォールバック
+      Toast.warning('カメラにアクセスできません。ファイル選択を使用してください。');
+      const cameraInputId = type === 'raw' ? 'rawPhotoCamera' : 'finishedPhotoCamera';
+      document.getElementById(cameraInputId).click();
+    }
+  },
+
+  // カメラモーダルを閉じる
+  closeCamera() {
+    // ストリームを停止
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach(track => track.stop());
+      this.cameraStream = null;
+    }
+    const video = document.getElementById('cameraVideo');
+    if (video) video.srcObject = null;
+    document.getElementById('cameraModal').classList.add('hidden');
+    this.cameraPhotoType = null;
+  },
+
+  // 写真を撮影
+  capturePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('cameraCanvas');
+    if (!video || !canvas) return;
+
+    // Canvasにビデオフレームを描画
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+
+    // CanvasからBlobを生成
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        this.handleFileSelect(this.cameraPhotoType, file);
+      }
+      this.closeCamera();
+    }, 'image/jpeg', 0.85);
+  },
+
   // ファイルをBase64に変換
   fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -1033,7 +1105,7 @@ const ProductForm = {
       rawPhotoUrls: rawPhotoUrl,
       finishedPhotoUrls: finishedPhotoUrl,
       supplierId: document.getElementById('supplierId').value,
-      purchaseDate: new Date(document.getElementById('purchaseDate').value),
+      purchaseDate: document.getElementById('purchaseDate').value,
       purchasePrice: parseInt(document.getElementById('purchasePrice').value) || 0,
       storageLocationId: document.getElementById('storageLocationId').value,
       shippingCost: parseInt(document.getElementById('shippingCost').value) || undefined,
@@ -1457,9 +1529,9 @@ const ProductDetail = {
 
     try {
       const salesData = {
-        actualSalesPrice: actualSalesPrice,
-        salesDate: new Date(salesDate),
-        salesDestination: salesDestination || null,
+        soldPrice: actualSalesPrice,
+        soldDate: salesDate,
+        soldTo: salesDestination || null,
       };
 
       await Api.sellProduct(this.productId, salesData);
@@ -1989,7 +2061,11 @@ const Master = {
         displayOrder: displayOrder ? parseInt(displayOrder) : undefined,
       };
 
-      await Api.addMasterData('woodType', data);
+      if (editId) {
+        await Api.updateMasterData('woodType', editId, data);
+      } else {
+        await Api.addMasterData('woodType', data);
+      }
       Toast.success(editId ? '樹種を更新しました' : '樹種を追加しました');
       this.closeWoodTypeModal();
       await this.loadAllMasters();
@@ -2069,7 +2145,11 @@ const Master = {
         address: address || undefined,
       };
 
-      await Api.addMasterData('supplier', data);
+      if (editId) {
+        await Api.updateMasterData('supplier', editId, data);
+      } else {
+        await Api.addMasterData('supplier', data);
+      }
       Toast.success(editId ? '仕入れ先を更新しました' : '仕入れ先を追加しました');
       this.closeSupplierModal();
       await this.loadAllMasters();
@@ -2155,7 +2235,11 @@ const Master = {
         processingTypes: processingTypes.length > 0 ? processingTypes : undefined,
       };
 
-      await Api.addMasterData('processor', data);
+      if (editId) {
+        await Api.updateMasterData('processor', editId, data);
+      } else {
+        await Api.addMasterData('processor', data);
+      }
       Toast.success(editId ? '加工業者を更新しました' : '加工業者を追加しました');
       this.closeProcessorModal();
       await this.loadAllMasters();
@@ -2231,7 +2315,11 @@ const Master = {
         displayOrder: displayOrder ? parseInt(displayOrder) : undefined,
       };
 
-      await Api.addMasterData('storageLocation', data);
+      if (editId) {
+        await Api.updateMasterData('storageLocation', editId, data);
+      } else {
+        await Api.addMasterData('storageLocation', data);
+      }
       Toast.success(editId ? '保管場所を更新しました' : '保管場所を追加しました');
       this.closeStorageLocationModal();
       await this.loadAllMasters();

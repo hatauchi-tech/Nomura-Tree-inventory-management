@@ -74,7 +74,7 @@
           <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('rawPhotoFile').click()">
             ファイルを選択
           </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('rawPhotoCamera').click()">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="ProductForm.openCamera('raw')">
             カメラ撮影
           </button>
           <button type="button" class="btn btn-sm btn-danger photo-remove-btn hidden" id="rawPhotoRemoveBtn" onclick="ProductForm.removePhoto('raw')">
@@ -101,7 +101,7 @@
           <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('finishedPhotoFile').click()">
             ファイルを選択
           </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('finishedPhotoCamera').click()">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="ProductForm.openCamera('finished')">
             カメラ撮影
           </button>
           <button type="button" class="btn btn-sm btn-danger photo-remove-btn hidden" id="finishedPhotoRemoveBtn" onclick="ProductForm.removePhoto('finished')">
@@ -314,3 +314,21 @@
     </button>
   </div>
 </form>
+
+<!-- カメラ撮影モーダル -->
+<div class="modal-overlay hidden" id="cameraModal">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">カメラ撮影</h3>
+      <button class="modal-close" onclick="ProductForm.closeCamera()">×</button>
+    </div>
+    <div class="modal-body" style="padding: 0; text-align: center;">
+      <video id="cameraVideo" autoplay playsinline style="width: 100%; max-height: 60vh; background: #000;"></video>
+      <canvas id="cameraCanvas" style="display: none;"></canvas>
+    </div>
+    <div class="modal-footer" style="justify-content: center; gap: var(--spacing-md);">
+      <button class="btn btn-secondary" onclick="ProductForm.closeCamera()">キャンセル</button>
+      <button class="btn btn-primary" onclick="ProductForm.capturePhoto()">撮影</button>
+    </div>
+  </div>
+</div>

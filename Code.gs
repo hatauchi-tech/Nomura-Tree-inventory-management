@@ -57,6 +57,8 @@ function getStorageLocations() {
 }
 function addMasterData() {
 }
+function updateMasterData() {
+}
 function deleteMasterData() {
 }
 // 棚卸しAPI
@@ -2565,6 +2567,10 @@ function getProductDetail(productId) {
  */
 function createProduct(dto) {
     try {
+        // 日付文字列をDateオブジェクトに変換（google.script.runではDateオブジェクトを直接渡せないため）
+        if (dto.purchaseDate && !(dto.purchaseDate instanceof Date)) {
+            dto.purchaseDate = new Date(dto.purchaseDate);
+        }
         const service = new ProductService_1.ProductService(getSpreadsheetId());
         const result = service.createProduct(dto);
         return JSON.parse(JSON.stringify(result));
@@ -2579,6 +2585,10 @@ function createProduct(dto) {
  */
 function updateProduct(productId, dto) {
     try {
+        // 日付文字列をDateオブジェクトに変換（google.script.runではDateオブジェクトを直接渡せないため）
+        if (dto.purchaseDate && !(dto.purchaseDate instanceof Date)) {
+            dto.purchaseDate = new Date(dto.purchaseDate);
+        }
         const service = new ProductService_1.ProductService(getSpreadsheetId());
         const result = service.updateProduct(productId, dto);
         return JSON.parse(JSON.stringify(result));
@@ -2622,6 +2632,10 @@ function getDashboardStats() {
  */
 function sellProduct(productId, salesData) {
     try {
+        // 日付文字列をDateオブジェクトに変換（google.script.runではDateオブジェクトを直接渡せないため）
+        if (salesData.soldDate && !(salesData.soldDate instanceof Date)) {
+            salesData.soldDate = new Date(salesData.soldDate);
+        }
         const service = new SalesService_1.SalesService(getSpreadsheetId());
         const result = service.sellProduct(productId, salesData);
         return JSON.parse(JSON.stringify(result));
@@ -2675,8 +2689,10 @@ function getSoldProductsWithFilter(startDateStr, endDateStr, woodType) {
             const endDate = endDateStr ? new Date(endDateStr) : null;
             products = products.filter((p) => {
                 if (!p.salesDate)
-                    return false;
+                    return true; // 販売日が未設定の販売済み製品も表示する
                 const salesDate = new Date(p.salesDate);
+                if (isNaN(salesDate.getTime()))
+                    return true; // 無効な日付の場合も表示する
                 if (startDate && salesDate < startDate)
                     return false;
                 if (endDate && salesDate > endDate)
@@ -2688,7 +2704,7 @@ function getSoldProductsWithFilter(startDateStr, endDateStr, woodType) {
         if (woodType) {
             products = products.filter((p) => p.woodType === woodType);
         }
-        // 販売日で降順ソート
+        // 販売日で降順ソート（日付なしは末尾に）
         products.sort((a, b) => {
             const dateA = a.salesDate ? new Date(a.salesDate).getTime() : 0;
             const dateB = b.salesDate ? new Date(b.salesDate).getTime() : 0;
@@ -2837,6 +2853,47 @@ function addMasterData(type, data) {
     }
     catch (error) {
         console.error('addMasterData error:', error);
+        throw error;
+    }
+}
+/**
+ * マスターデータ更新
+ */
+function updateMasterData(type, id, data) {
+    try {
+        const spreadsheetId = getSpreadsheetId();
+        let result;
+        switch (type) {
+            case 'woodType': {
+                const repo = new MasterRepository_1.WoodTypeRepository(spreadsheetId);
+                result = repo.update(id, data);
+                break;
+            }
+            case 'supplier': {
+                const repo = new MasterRepository_1.SupplierRepository(spreadsheetId);
+                result = repo.update(id, data);
+                break;
+            }
+            case 'processor': {
+                const repo = new MasterRepository_1.ProcessorRepository(spreadsheetId);
+                result = repo.update(id, data);
+                break;
+            }
+            case 'storageLocation': {
+                const repo = new MasterRepository_1.StorageLocationRepository(spreadsheetId);
+                result = repo.update(id, data);
+                break;
+            }
+            default:
+                throw new Error(`Unknown master type: ${type}`);
+        }
+        if (!result) {
+            throw new Error(`${type} with id ${id} not found`);
+        }
+        return JSON.parse(JSON.stringify(result));
+    }
+    catch (error) {
+        console.error('updateMasterData error:', error);
         throw error;
     }
 }
@@ -3194,6 +3251,7 @@ __webpack_require__.g.getSuppliers = getSuppliers;
 __webpack_require__.g.getProcessors = getProcessors;
 __webpack_require__.g.getStorageLocations = getStorageLocations;
 __webpack_require__.g.addMasterData = addMasterData;
+__webpack_require__.g.updateMasterData = updateMasterData;
 __webpack_require__.g.deleteMasterData = deleteMasterData;
 // 棚卸しAPI
 __webpack_require__.g.startInventorySession = startInventorySession;

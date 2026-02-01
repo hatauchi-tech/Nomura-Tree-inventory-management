@@ -142,6 +142,13 @@ const Api = {
   },
 
   /**
+   * マスターデータを更新
+   */
+  updateMasterData(type, id, data) {
+    return this.callWithLoading('updateMasterData', type, id, data);
+  },
+
+  /**
    * マスターデータを削除
    */
   deleteMasterData(type, id) {
