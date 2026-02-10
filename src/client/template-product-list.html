@@ -23,6 +23,12 @@
     <option value="足">足</option>
     <option value="その他">その他</option>
   </select>
+  <select class="form-select" id="filterStorageLocation" style="width: auto; min-width: 150px;">
+    <option value="">すべての保管場所</option>
+  </select>
+  <select class="form-select" id="filterWoodType" style="width: auto; min-width: 150px;">
+    <option value="">すべての樹種</option>
+  </select>
   <button class="btn btn-secondary" onclick="ProductList.resetFilters()">
     リセット
   </button>
@@ -31,6 +37,18 @@
       ➕ 新規登録
     </button>
   </div>
+</div>
+
+<!-- サイズフィルター -->
+<div class="action-bar" style="gap: 8px; flex-wrap: wrap;">
+  <span class="text-muted" style="white-space: nowrap;">サイズ絞り込み:</span>
+  <input type="number" class="form-input" id="filterMinLength" placeholder="長さ(mm)下限" style="width: 130px;">
+  <span class="text-muted">〜</span>
+  <input type="number" class="form-input" id="filterMaxLength" placeholder="長さ(mm)上限" style="width: 130px;">
+  <span class="text-muted" style="margin-left: 8px;">幅:</span>
+  <input type="number" class="form-input" id="filterMinWidth" placeholder="幅(mm)下限" style="width: 130px;">
+  <span class="text-muted">〜</span>
+  <input type="number" class="form-input" id="filterMaxWidth" placeholder="幅(mm)上限" style="width: 130px;">
 </div>
 
 <!-- 製品カウント -->
