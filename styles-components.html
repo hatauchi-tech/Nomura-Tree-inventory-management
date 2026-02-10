@@ -645,6 +645,43 @@
   color: var(--color-primary);
 }
 
+/* サジェスト入力 */
+.suggest-input-wrapper {
+  position: relative;
+}
+.suggest-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-primary);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: var(--shadow-md);
+}
+.suggest-dropdown.hidden { display: none; }
+.suggest-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: var(--text-base);
+  transition: background var(--transition-fast);
+}
+.suggest-item:hover,
+.suggest-item.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+.suggest-no-match {
+  padding: 10px 16px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+
 /* Custom Calendar */
 .calendar-overlay {
   position: fixed;

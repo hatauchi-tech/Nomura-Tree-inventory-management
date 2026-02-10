@@ -63,6 +63,8 @@ function addMasterData() {
 }
 function deleteMasterData() {
 }
+function getUniqueCategoryValues() {
+}
 // 棚卸しAPI
 function startInventorySession() {
 }
@@ -3137,6 +3139,41 @@ function uploadProductPhoto(base64Data, filename, mimeType) {
         throw new Error('写真アップロードエラー: ' + errorMessage);
     }
 }
+// ==================== カテゴリサジェストAPI ====================
+/**
+ * 製品データ＋マスターから大分類・中分類のユニーク値を取得
+ */
+function getUniqueCategoryValues() {
+    try {
+        const spreadsheetId = getSpreadsheetId();
+        const productService = new ProductService_1.ProductService(spreadsheetId);
+        const majorCategoryRepo = new MasterRepository_1.MajorCategoryRepository(spreadsheetId);
+        const minorCategoryRepo = new MasterRepository_1.MinorCategoryRepository(spreadsheetId);
+        // 製品データからユニーク値を収集
+        const allProducts = productService.searchProducts({}, { page: 1, limit: 10000 });
+        const majorSet = new Set();
+        const minorSet = new Set();
+        allProducts.data.forEach((p) => {
+            if (p.majorCategory)
+                majorSet.add(p.majorCategory);
+            if (p.minorCategory)
+                minorSet.add(p.minorCategory);
+        });
+        // マスターデータからも追加
+        const majorMasters = majorCategoryRepo.findAllSorted();
+        majorMasters.forEach((m) => majorSet.add(m.name));
+        const minorMasters = minorCategoryRepo.findAllSorted();
+        minorMasters.forEach((m) => minorSet.add(m.name));
+        return {
+            majorCategories: Array.from(majorSet).sort(),
+            minorCategories: Array.from(minorSet).sort(),
+        };
+    }
+    catch (error) {
+        console.error('getUniqueCategoryValues error:', error);
+        throw error;
+    }
+}
 // ==================== レポートAPI ====================
 /**
  * 在庫レポート取得
@@ -3281,6 +3318,7 @@ __webpack_require__.g.getMajorCategories = getMajorCategories;
 __webpack_require__.g.getMinorCategories = getMinorCategories;
 __webpack_require__.g.addMasterData = addMasterData;
 __webpack_require__.g.deleteMasterData = deleteMasterData;
+__webpack_require__.g.getUniqueCategoryValues = getUniqueCategoryValues;
 // 棚卸しAPI
 __webpack_require__.g.startInventorySession = startInventorySession;
 __webpack_require__.g.getInventoryProgress = getInventoryProgress;
@@ -4157,7 +4195,7 @@ exports.SHEET_NAMES = {
     MINOR_CATEGORIES_MASTER: '中分類マスター',
 };
 /**
- * 大分類
+ * 大分類（自由記述。デフォルト候補はマスターシートから取得）
  */
 exports.MAJOR_CATEGORIES = [
     'テーブル',
@@ -4167,7 +4205,7 @@ exports.MAJOR_CATEGORIES = [
     'その他',
 ];
 /**
- * 中分類
+ * 中分類（自由記述。デフォルト候補はマスターシートから取得）
  */
 exports.MINOR_CATEGORIES = ['家具', '雑貨', '加工材料', 'その他'];
 /**

@@ -260,6 +260,157 @@ const Confirm = {
   },
 };
 
+/**
+ * サジェスト入力コンポーネント
+ */
+var SuggestInput = {
+  instances: {},
+
+  /**
+   * サジェスト入力を初期化
+   * @param {string} inputId - テキスト入力要素のID
+   * @param {string} dropdownId - ドロップダウン要素のID
+   * @param {string[]} suggestions - サジェスト候補の配列
+   */
+  init: function(inputId, dropdownId, suggestions) {
+    var input = document.getElementById(inputId);
+    var dropdown = document.getElementById(dropdownId);
+    if (!input || !dropdown) return;
+
+    var instance = {
+      input: input,
+      dropdown: dropdown,
+      suggestions: suggestions || [],
+      activeIndex: -1,
+    };
+    this.instances[inputId] = instance;
+
+    // 入力時にフィルタリング
+    input.addEventListener('input', function() {
+      SuggestInput.showFiltered(inputId);
+    });
+
+    // フォーカス時に候補を表示
+    input.addEventListener('focus', function() {
+      SuggestInput.showFiltered(inputId);
+    });
+
+    // キーボード操作
+    input.addEventListener('keydown', function(e) {
+      var inst = SuggestInput.instances[inputId];
+      var items = dropdown.querySelectorAll('.suggest-item');
+      if (!items.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        inst.activeIndex = Math.min(inst.activeIndex + 1, items.length - 1);
+        SuggestInput.updateActive(inputId, items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        inst.activeIndex = Math.max(inst.activeIndex - 1, 0);
+        SuggestInput.updateActive(inputId, items);
+      } else if (e.key === 'Enter') {
+        if (inst.activeIndex >= 0 && items[inst.activeIndex]) {
+          e.preventDefault();
+          input.value = items[inst.activeIndex].textContent;
+          SuggestInput.hideDropdown(inputId);
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      } else if (e.key === 'Escape') {
+        SuggestInput.hideDropdown(inputId);
+      }
+    });
+
+    // 外側クリックで閉じる
+    document.addEventListener('click', function(e) {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        SuggestInput.hideDropdown(inputId);
+      }
+    });
+  },
+
+  /**
+   * サジェスト候補を更新
+   */
+  updateSuggestions: function(inputId, suggestions) {
+    var inst = this.instances[inputId];
+    if (inst) {
+      inst.suggestions = suggestions || [];
+    }
+  },
+
+  /**
+   * フィルタリングされた候補を表示
+   */
+  showFiltered: function(inputId) {
+    var inst = this.instances[inputId];
+    if (!inst) return;
+
+    var query = inst.input.value.trim().toLowerCase();
+    var filtered = inst.suggestions.filter(function(s) {
+      return s.toLowerCase().indexOf(query) !== -1;
+    });
+
+    inst.activeIndex = -1;
+    var dropdown = inst.dropdown;
+
+    // 候補をクリア
+    while (dropdown.firstChild) {
+      dropdown.removeChild(dropdown.firstChild);
+    }
+
+    if (filtered.length === 0) {
+      if (query) {
+        var noMatch = document.createElement('div');
+        noMatch.className = 'suggest-no-match';
+        noMatch.textContent = '「' + inst.input.value.trim() + '」を新規入力';
+        dropdown.appendChild(noMatch);
+      }
+    } else {
+      filtered.forEach(function(text) {
+        var item = document.createElement('div');
+        item.className = 'suggest-item';
+        item.textContent = text;
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          inst.input.value = text;
+          SuggestInput.hideDropdown(inputId);
+          inst.input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        dropdown.appendChild(item);
+      });
+    }
+
+    dropdown.classList.remove('hidden');
+  },
+
+  /**
+   * アクティブアイテムを更新
+   */
+  updateActive: function(inputId, items) {
+    var inst = this.instances[inputId];
+    items.forEach(function(item, i) {
+      if (i === inst.activeIndex) {
+        item.classList.add('active');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  },
+
+  /**
+   * ドロップダウンを閉じる
+   */
+  hideDropdown: function(inputId) {
+    var inst = this.instances[inputId];
+    if (inst) {
+      inst.dropdown.classList.add('hidden');
+      inst.activeIndex = -1;
+    }
+  },
+};
+
 // DOMContentLoaded時に初期化
 document.addEventListener('DOMContentLoaded', () => {
   Toast.init();
