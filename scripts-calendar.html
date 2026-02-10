@@ -1,0 +1,212 @@
+<script>
+var CustomCalendar = {
+  activeInput: null,
+  overlay: null,
+  currentYear: null,
+  currentMonth: null,
+
+  // Convert to Reiwa (令和)
+  toReiwa: function(year) {
+    if (year >= 2019) return '令和' + (year - 2018) + '年';
+    if (year >= 1989) return '平成' + (year - 1988) + '年';
+    return year + '年';
+  },
+
+  init: function() {
+    // Create overlay element once
+    this.createOverlay();
+    // Attach to all date inputs
+    this.attachToDateInputs();
+  },
+
+  createOverlay: function() {
+    var overlay = document.createElement('div');
+    overlay.id = 'custom-calendar-overlay';
+    overlay.className = 'calendar-overlay hidden';
+
+    // Build overlay DOM using safe DOM methods
+    var container = document.createElement('div');
+    container.className = 'calendar-container';
+
+    // Header
+    var header = document.createElement('div');
+    header.className = 'calendar-header';
+
+    var prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'calendar-nav-btn';
+    prevBtn.id = 'calendarPrev';
+    prevBtn.textContent = '\u2190';
+
+    var titleSpan = document.createElement('span');
+    titleSpan.className = 'calendar-title';
+    titleSpan.id = 'calendarTitle';
+
+    var nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'calendar-nav-btn';
+    nextBtn.id = 'calendarNext';
+    nextBtn.textContent = '\u2192';
+
+    header.appendChild(prevBtn);
+    header.appendChild(titleSpan);
+    header.appendChild(nextBtn);
+
+    // Weekdays
+    var weekdays = document.createElement('div');
+    weekdays.className = 'calendar-weekdays';
+    var dayNames = ['\u65E5', '\u6708', '\u706B', '\u6C34', '\u6728', '\u91D1', '\u571F'];
+    dayNames.forEach(function(name) {
+      var span = document.createElement('span');
+      span.textContent = name;
+      weekdays.appendChild(span);
+    });
+
+    // Days grid
+    var daysGrid = document.createElement('div');
+    daysGrid.className = 'calendar-days';
+    daysGrid.id = 'calendarDays';
+
+    // Footer
+    var footer = document.createElement('div');
+    footer.className = 'calendar-footer';
+
+    var todayBtn = document.createElement('button');
+    todayBtn.type = 'button';
+    todayBtn.className = 'btn btn-sm btn-secondary';
+    todayBtn.id = 'calendarToday';
+    todayBtn.textContent = '\u4ECA\u65E5';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn btn-sm btn-secondary';
+    closeBtn.id = 'calendarClose';
+    closeBtn.textContent = '\u9589\u3058\u308B';
+
+    footer.appendChild(todayBtn);
+    footer.appendChild(closeBtn);
+
+    // Assemble
+    container.appendChild(header);
+    container.appendChild(weekdays);
+    container.appendChild(daysGrid);
+    container.appendChild(footer);
+    overlay.appendChild(container);
+
+    document.body.appendChild(overlay);
+    this.overlay = overlay;
+
+    // Event listeners
+    prevBtn.addEventListener('click', function() { CustomCalendar.changeMonth(-1); });
+    nextBtn.addEventListener('click', function() { CustomCalendar.changeMonth(1); });
+    todayBtn.addEventListener('click', function() { CustomCalendar.selectToday(); });
+    closeBtn.addEventListener('click', function() { CustomCalendar.close(); });
+
+    // Close when clicking outside
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) CustomCalendar.close();
+    });
+  },
+
+  attachToDateInputs: function() {
+    var dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(function(input) {
+      // Create a clickable overlay for the date input
+      input.addEventListener('click', function(e) {
+        e.preventDefault();
+        CustomCalendar.open(this);
+      });
+    });
+  },
+
+  open: function(input) {
+    this.activeInput = input;
+    var now = input.value ? new Date(input.value) : new Date();
+    this.currentYear = now.getFullYear();
+    this.currentMonth = now.getMonth();
+    this.render();
+    this.overlay.classList.remove('hidden');
+  },
+
+  close: function() {
+    this.overlay.classList.add('hidden');
+    this.activeInput = null;
+  },
+
+  changeMonth: function(delta) {
+    this.currentMonth += delta;
+    if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
+    if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
+    this.render();
+  },
+
+  selectDate: function(year, month, day) {
+    var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    if (this.activeInput) {
+      this.activeInput.value = dateStr;
+      this.activeInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    this.close();
+  },
+
+  selectToday: function() {
+    var today = new Date();
+    this.selectDate(today.getFullYear(), today.getMonth(), today.getDate());
+  },
+
+  render: function() {
+    // Title: 2026年（令和８年）2月
+    var reiwa = this.toReiwa(this.currentYear);
+    var title = this.currentYear + '\u5E74\uFF08' + reiwa + '\uFF09' + (this.currentMonth + 1) + '\u6708';
+    document.getElementById('calendarTitle').textContent = title;
+
+    // Days grid
+    var firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
+    var daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+    var today = new Date();
+    var selectedDate = this.activeInput && this.activeInput.value ? new Date(this.activeInput.value) : null;
+
+    var daysContainer = document.getElementById('calendarDays');
+    // Clear previous content
+    while (daysContainer.firstChild) {
+      daysContainer.removeChild(daysContainer.firstChild);
+    }
+
+    // Empty cells for days before first day
+    for (var i = 0; i < firstDay; i++) {
+      var emptySpan = document.createElement('span');
+      emptySpan.className = 'calendar-day empty';
+      daysContainer.appendChild(emptySpan);
+    }
+
+    var self = this;
+    // Day cells
+    for (var day = 1; day <= daysInMonth; day++) {
+      var isToday = (today.getFullYear() === this.currentYear && today.getMonth() === this.currentMonth && today.getDate() === day);
+      var isSelected = selectedDate && (selectedDate.getFullYear() === this.currentYear && selectedDate.getMonth() === this.currentMonth && selectedDate.getDate() === day);
+      var classes = 'calendar-day';
+      if (isToday) classes += ' today';
+      if (isSelected) classes += ' selected';
+      var dow = (firstDay + day - 1) % 7;
+      if (dow === 0) classes += ' sunday';
+      if (dow === 6) classes += ' saturday';
+
+      var daySpan = document.createElement('span');
+      daySpan.className = classes;
+      daySpan.setAttribute('data-day', String(day));
+      daySpan.textContent = String(day);
+      daySpan.addEventListener('click', (function(d) {
+        return function() {
+          self.selectDate(self.currentYear, self.currentMonth, d);
+        };
+      })(day));
+      daysContainer.appendChild(daySpan);
+    }
+  }
+};
+
+// Initialize after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() { CustomCalendar.init(); }, 500);
+});
+</script>

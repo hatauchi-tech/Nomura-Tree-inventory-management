@@ -1,0 +1,268 @@
+<script>
+/**
+ * 共通ユーティリティ関数
+ */
+
+const Utils = {
+  /**
+   * 金額をフォーマット
+   */
+  formatCurrency(amount) {
+    if (amount === null || amount === undefined) return '-';
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  },
+
+  /**
+   * 数値をカンマ区切りでフォーマット
+   */
+  formatNumber(num) {
+    if (num === null || num === undefined) return '-';
+    return new Intl.NumberFormat('ja-JP').format(num);
+  },
+
+  /**
+   * 日付をフォーマット
+   */
+  formatDate(date) {
+    if (!date) return '-';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  },
+
+  /**
+   * 日時をフォーマット
+   */
+  formatDateTime(date) {
+    if (!date) return '-';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  },
+
+  /**
+   * サイズをフォーマット
+   */
+  formatSize(value, unit = 'mm') {
+    if (!value && value !== 0) return '-';
+    return `${this.formatNumber(value)}${unit}`;
+  },
+
+  /**
+   * ステータスバッジクラスを取得
+   */
+  getStatusClass(status) {
+    const classMap = {
+      '販売中': 'status-available',
+      '商談中': 'status-negotiating',
+      '販売済み': 'status-sold',
+      '棚卸し中': 'status-inventory',
+      '削除済み': 'status-deleted',
+      '紛失': 'status-deleted',
+    };
+    return classMap[status] || 'badge-info';
+  },
+
+  /**
+   * 要素を表示
+   */
+  show(element) {
+    if (typeof element === 'string') {
+      element = document.getElementById(element);
+    }
+    if (element) {
+      element.classList.remove('hidden');
+    }
+  },
+
+  /**
+   * 要素を非表示
+   */
+  hide(element) {
+    if (typeof element === 'string') {
+      element = document.getElementById(element);
+    }
+    if (element) {
+      element.classList.add('hidden');
+    }
+  },
+
+  /**
+   * 要素の表示/非表示を切り替え
+   */
+  toggle(element) {
+    if (typeof element === 'string') {
+      element = document.getElementById(element);
+    }
+    if (element) {
+      element.classList.toggle('hidden');
+    }
+  },
+
+  /**
+   * フォームデータをオブジェクトに変換
+   */
+  formToObject(form) {
+    const formData = new FormData(form);
+    const obj = {};
+    formData.forEach((value, key) => {
+      obj[key] = value;
+    });
+    return obj;
+  },
+
+  /**
+   * デバウンス
+   */
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  },
+
+  /**
+   * URLパラメータを取得
+   */
+  getUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const obj = {};
+    params.forEach((value, key) => {
+      obj[key] = value;
+    });
+    return obj;
+  },
+
+  /**
+   * 金額入力フィールドにカンマ区切りフォーマットを適用
+   */
+  formatPriceInput(input) {
+    input.addEventListener('blur', function() {
+      var value = this.value.replace(/,/g, '');
+      if (value && !isNaN(value)) {
+        this.value = Number(value).toLocaleString();
+      }
+    });
+    input.addEventListener('focus', function() {
+      this.value = this.value.replace(/,/g, '');
+    });
+  },
+
+  /**
+   * XSS対策のエスケープ
+   */
+  escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  },
+};
+
+/**
+ * トースト通知
+ */
+const Toast = {
+  container: null,
+
+  init() {
+    this.container = document.getElementById('toastContainer');
+  },
+
+  show(message, type = 'info', duration = 3000) {
+    if (!this.container) this.init();
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+
+    this.container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  },
+
+  success(message) {
+    this.show(message, 'success');
+  },
+
+  error(message) {
+    this.show(message, 'error', 5000);
+  },
+
+  warning(message) {
+    this.show(message, 'warning', 4000);
+  },
+
+  info(message) {
+    this.show(message, 'info');
+  },
+};
+
+/**
+ * ローディング
+ */
+const Loading = {
+  overlay: null,
+
+  init() {
+    this.overlay = document.getElementById('loadingOverlay');
+  },
+
+  show() {
+    if (!this.overlay) this.init();
+    if (this.overlay) {
+      this.overlay.classList.remove('hidden');
+    }
+  },
+
+  hide() {
+    if (!this.overlay) this.init();
+    if (this.overlay) {
+      this.overlay.classList.add('hidden');
+    }
+  },
+};
+
+/**
+ * 確認ダイアログ
+ */
+const Confirm = {
+  show(message, onConfirm, onCancel) {
+    const result = window.confirm(message);
+    if (result) {
+      onConfirm && onConfirm();
+    } else {
+      onCancel && onCancel();
+    }
+  },
+};
+
+// DOMContentLoaded時に初期化
+document.addEventListener('DOMContentLoaded', () => {
+  Toast.init();
+  Loading.init();
+});
+</script>

@@ -1,0 +1,329 @@
+<div class="page-header">
+  <h2 class="page-title" id="formTitle">製品登録</h2>
+</div>
+
+<form id="productForm" class="content-area">
+  <!-- 基本情報 -->
+  <div class="form-section">
+    <h3 class="form-section-title">基本情報</h3>
+
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label form-label-required" for="majorCategory">大分類</label>
+        <select class="form-select" id="majorCategory" name="majorCategory" required>
+          <option value="">選択してください</option>
+          <option value="テーブル">テーブル</option>
+          <option value="カウンター">カウンター</option>
+          <option value="スツール">スツール</option>
+          <option value="足">足</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="minorCategory">中分類</label>
+        <select class="form-select" id="minorCategory" name="minorCategory">
+          <option value="">選択してください</option>
+          <option value="家具">家具</option>
+          <option value="雑貨">雑貨</option>
+          <option value="加工材料">加工材料</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label form-label-required" for="productName">商品名</label>
+      <input type="text" class="form-input" id="productName" name="productName" required maxlength="100" placeholder="例: ウォルナット一枚板テーブル">
+    </div>
+
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label form-label-required" for="woodType">樹種</label>
+        <select class="form-select" id="woodType" name="woodType" required>
+          <option value="">選択してください</option>
+          <!-- 樹種はAPIから動的に読み込み -->
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label form-label-required" for="storageLocationId">保管場所</label>
+        <select class="form-select" id="storageLocationId" name="storageLocationId" required>
+          <option value="">選択してください</option>
+          <!-- 保管場所はAPIから動的に読み込み -->
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 写真 -->
+  <div class="form-section">
+    <h3 class="form-section-title">写真</h3>
+    <p class="text-muted mb-md">ファイルを選択、またはカメラで撮影してください。アップロードされた画像はGoogleドライブに保存されます。</p>
+
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label class="form-label">入荷時写真</label>
+        <div id="rawPhotoPreview" class="photo-preview-container">
+          <div class="photo-preview-placeholder">プレビュー</div>
+        </div>
+        <!-- 写真選択ボタン -->
+        <div class="photo-upload-buttons">
+          <input type="file" id="rawPhotoFile" accept="image/*" style="display:none" onchange="ProductForm.handleFileSelect('raw', this.files[0])">
+          <input type="file" id="rawPhotoCamera" accept="image/*" capture="environment" style="display:none" onchange="ProductForm.handleFileSelect('raw', this.files[0])">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('rawPhotoFile').click()">
+            ファイルを選択
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('rawPhotoCamera').click()">
+            カメラ撮影
+          </button>
+          <button type="button" class="btn btn-sm btn-danger photo-remove-btn hidden" id="rawPhotoRemoveBtn" onclick="ProductForm.removePhoto('raw')">
+            削除
+          </button>
+        </div>
+        <!-- 隠しフィールド（URLを保持） -->
+        <input type="hidden" id="rawPhotoUrl" name="rawPhotoUrl">
+        <!-- 処理中の表示 -->
+        <div id="rawPhotoUploading" class="photo-uploading hidden">
+          <span class="spinner-small"></span> アップロード中...
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">仕上げ後写真</label>
+        <div id="finishedPhotoPreview" class="photo-preview-container">
+          <div class="photo-preview-placeholder">プレビュー</div>
+        </div>
+        <!-- 写真選択ボタン -->
+        <div class="photo-upload-buttons">
+          <input type="file" id="finishedPhotoFile" accept="image/*" style="display:none" onchange="ProductForm.handleFileSelect('finished', this.files[0])">
+          <input type="file" id="finishedPhotoCamera" accept="image/*" capture="environment" style="display:none" onchange="ProductForm.handleFileSelect('finished', this.files[0])">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('finishedPhotoFile').click()">
+            ファイルを選択
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('finishedPhotoCamera').click()">
+            カメラ撮影
+          </button>
+          <button type="button" class="btn btn-sm btn-danger photo-remove-btn hidden" id="finishedPhotoRemoveBtn" onclick="ProductForm.removePhoto('finished')">
+            削除
+          </button>
+        </div>
+        <!-- 隠しフィールド（URLを保持） -->
+        <input type="hidden" id="finishedPhotoUrl" name="finishedPhotoUrl">
+        <!-- 処理中の表示 -->
+        <div id="finishedPhotoUploading" class="photo-uploading hidden">
+          <span class="spinner-small"></span> アップロード中...
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .photo-preview-container {
+        margin-bottom: var(--spacing-md);
+      }
+      .photo-upload-buttons {
+        display: flex;
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .photo-upload-buttons .btn {
+        min-width: 110px;
+      }
+      .photo-remove-btn {
+        padding: 6px 12px;
+      }
+      .photo-uploading {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        color: var(--color-primary);
+        font-size: var(--text-sm);
+        margin-top: var(--spacing-sm);
+      }
+      .spinner-small {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--color-border);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </div>
+
+  <!-- サイズ情報 -->
+  <div class="form-section">
+    <h3 class="form-section-title">サイズ情報</h3>
+
+    <p class="text-muted mb-md">入荷時サイズ（mm単位）</p>
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label class="form-label" for="rawLength">長さ</label>
+        <input type="number" class="form-input" id="rawLength" name="rawLength" min="1" max="99999" placeholder="mm">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="rawWidth">幅</label>
+        <input type="number" class="form-input" id="rawWidth" name="rawWidth" min="1" max="99999" placeholder="mm">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="rawThickness">厚み</label>
+        <input type="number" class="form-input" id="rawThickness" name="rawThickness" min="1" max="99999" placeholder="mm">
+      </div>
+    </div>
+
+    <p class="text-muted mb-md mt-md">仕上げ後サイズ（mm単位）</p>
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label class="form-label" for="finishedLength">長さ</label>
+        <input type="number" class="form-input" id="finishedLength" name="finishedLength" min="1" max="99999" placeholder="mm">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="finishedWidth">幅</label>
+        <input type="number" class="form-input" id="finishedWidth" name="finishedWidth" min="1" max="99999" placeholder="mm">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="finishedThickness">厚み</label>
+        <input type="number" class="form-input" id="finishedThickness" name="finishedThickness" min="1" max="99999" placeholder="mm">
+      </div>
+    </div>
+  </div>
+
+  <!-- 仕入れ情報 -->
+  <div class="form-section">
+    <h3 class="form-section-title">仕入れ情報</h3>
+
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label class="form-label form-label-required" for="supplierId">仕入れ先</label>
+        <select class="form-select" id="supplierId" name="supplierId" required>
+          <option value="">選択してください</option>
+          <!-- 仕入れ先はAPIから動的に読み込み -->
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label form-label-required" for="purchaseDate">仕入れ日</label>
+        <input type="date" class="form-input" id="purchaseDate" name="purchaseDate" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label form-label-required" for="purchasePrice">入荷単価（税抜）</label>
+        <input type="text" class="form-input" id="purchasePrice" name="purchasePrice" required inputmode="numeric" placeholder="円">
+      </div>
+    </div>
+  </div>
+
+  <!-- 加工費 -->
+  <div class="form-section">
+    <h3 class="form-section-title">加工費</h3>
+    <p class="text-muted mb-md">加工費は任意です。登録後に製品詳細画面からも追加・編集できます。</p>
+
+    <div id="processingCostsList">
+      <!-- 加工費リストはJSで動的に生成 -->
+    </div>
+
+    <button type="button" class="btn btn-secondary btn-sm mt-md" onclick="ProductForm.addProcessingCostRow()">
+      ➕ 加工費を追加
+    </button>
+  </div>
+
+  <!-- 価格設定 -->
+  <div class="form-section">
+    <h3 class="form-section-title">価格設定</h3>
+
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label class="form-label" for="shippingCost">販売時送料</label>
+        <input type="text" class="form-input" id="shippingCost" name="shippingCost" inputmode="numeric" placeholder="円">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="shippingCarrier">配送業者</label>
+        <input type="text" class="form-input" id="shippingCarrier" name="shippingCarrier" placeholder="例: ヤマト運輸、佐川急便、社員配送">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="profitMargin">利益率</label>
+        <input type="number" class="form-input" id="profitMargin" name="profitMargin" value="60" min="0" max="99" step="0.1" placeholder="%">
+        <span class="form-hint">デフォルト: 60%</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="priceAdjustment">価格調整額</label>
+        <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <input type="radio" name="priceAdjustmentType" value="exTax" checked> 税別
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <input type="radio" name="priceAdjustmentType" value="incTax"> 税込
+          </label>
+        </div>
+        <input type="text" class="form-input" id="priceAdjustment" name="priceAdjustment" value="0" inputmode="numeric" placeholder="円（マイナス可）">
+        <span class="form-hint">値引き: マイナス / 上乗せ: プラス</span>
+      </div>
+    </div>
+
+    <!-- 価格計算プレビュー -->
+    <div class="card" style="margin-top: var(--spacing-md);">
+      <div class="card-body">
+        <h4 class="card-title">価格プレビュー</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">入荷単価</span>
+            <span class="detail-value" id="previewPurchasePrice">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">加工費合計</span>
+            <span class="detail-value" id="previewProcessingCost">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">販売時送料</span>
+            <span class="detail-value" id="previewShippingCost">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">トータル原価</span>
+            <span class="detail-value font-bold" id="previewTotalCost">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">目安販売価格（税抜）</span>
+            <span class="detail-value" id="previewSuggestedPrice">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">価格調整額</span>
+            <span class="detail-value" id="previewPriceAdjustment">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">販売価格（税抜）</span>
+            <span class="detail-value" id="previewPriceExTax">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">販売価格（税込）</span>
+            <span class="detail-value font-bold" style="font-size: var(--text-xl); color: var(--color-primary);" id="previewPriceIncTax">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 備考 -->
+  <div class="form-section">
+    <h3 class="form-section-title">備考</h3>
+    <div class="form-group">
+      <textarea class="form-textarea" id="remarks" name="remarks" maxlength="500" placeholder="自由記入（500文字以内）"></textarea>
+    </div>
+  </div>
+
+  <!-- 送信ボタン -->
+  <div class="flex gap-md" style="justify-content: flex-end;">
+    <button type="button" class="btn btn-secondary" onclick="App.navigateTo('products')">
+      キャンセル
+    </button>
+    <button type="submit" class="btn btn-primary">
+      登録する
+    </button>
+  </div>
+</form>

@@ -1,0 +1,72 @@
+<div class="page-header">
+  <h2 class="page-title">製品一覧</h2>
+</div>
+
+<!-- 検索・フィルター -->
+<div class="action-bar">
+  <div class="search-input" style="flex: 1; max-width: 400px;">
+    <span class="search-input-icon">🔍</span>
+    <input type="text" class="form-input" id="searchKeyword" placeholder="商品名で検索...">
+  </div>
+  <select class="form-select" id="filterStatus" style="width: auto; min-width: 150px;">
+    <option value="" selected>すべてのステータス</option>
+    <option value="販売中">販売中</option>
+    <option value="商談中">商談中</option>
+    <option value="販売済み">販売済み</option>
+    <option value="棚卸し中">棚卸し中</option>
+    <option value="削除済み">削除済み</option>
+  </select>
+  <select class="form-select" id="filterCategory" style="width: auto; min-width: 150px;">
+    <option value="">すべての分類</option>
+    <option value="テーブル">テーブル</option>
+    <option value="カウンター">カウンター</option>
+    <option value="スツール">スツール</option>
+    <option value="足">足</option>
+    <option value="その他">その他</option>
+  </select>
+  <select class="form-select" id="filterStorageLocation" style="width: auto; min-width: 150px;">
+    <option value="">すべての保管場所</option>
+  </select>
+  <select class="form-select" id="filterWoodType" style="width: auto; min-width: 150px;">
+    <option value="">すべての樹種</option>
+  </select>
+  <button class="btn btn-secondary" onclick="ProductList.resetFilters()">
+    リセット
+  </button>
+  <div class="action-bar-right">
+    <button class="btn btn-primary" onclick="App.navigateTo('product-new')">
+      ➕ 新規登録
+    </button>
+  </div>
+</div>
+
+<!-- サイズフィルター -->
+<div class="action-bar" style="gap: 8px; flex-wrap: wrap;">
+  <span class="text-muted" style="white-space: nowrap;">サイズ絞り込み:</span>
+  <input type="number" class="form-input" id="filterMinLength" placeholder="長さ(mm)下限" style="width: 130px;">
+  <span class="text-muted">〜</span>
+  <input type="number" class="form-input" id="filterMaxLength" placeholder="長さ(mm)上限" style="width: 130px;">
+  <span class="text-muted" style="margin-left: 8px;">幅:</span>
+  <input type="number" class="form-input" id="filterMinWidth" placeholder="幅(mm)下限" style="width: 130px;">
+  <span class="text-muted">〜</span>
+  <input type="number" class="form-input" id="filterMaxWidth" placeholder="幅(mm)上限" style="width: 130px;">
+</div>
+
+<!-- 製品カウント -->
+<div class="mb-md">
+  <span class="text-muted" id="productCount">0 件の製品</span>
+</div>
+
+<!-- 製品グリッド -->
+<div class="product-grid" id="productGrid">
+  <div class="empty-state">
+    <div class="empty-state-icon">📦</div>
+    <div class="empty-state-title">製品データを読み込み中...</div>
+    <div class="empty-state-text">しばらくお待ちください。</div>
+  </div>
+</div>
+
+<!-- ページネーション -->
+<div class="pagination" id="pagination">
+  <!-- ページネーションボタンはJSで動的に生成 -->
+</div>
