@@ -37,7 +37,7 @@ export interface IProductService {
     conditions: ProductSearchCondition,
     pagination: PaginationOptions
   ): PaginatedResult<ProductListItem>;
-  getProductDetail(productId: string): Product | null;
+  getProductDetail(productId: string): (Product & { calculated?: PriceCalculationResult }) | null;
   createProduct(dto: CreateProductDto): Product;
   updateProduct(productId: string, dto: UpdateProductDto): Product;
   deleteProduct(productId: string, reason: string): Product;
@@ -113,10 +113,13 @@ export class ProductService implements IProductService {
   }
 
   /**
-   * 製品詳細取得
+   * 製品詳細取得（計算済み価格情報を含む）
    */
-  getProductDetail(productId: string): Product | null {
-    return this.productRepo.findById(productId);
+  getProductDetail(productId: string): (Product & { calculated?: PriceCalculationResult }) | null {
+    const product = this.productRepo.findById(productId);
+    if (!product) return null;
+    const prices = this.calculateProductPricesInternal(product);
+    return { ...product, calculated: prices };
   }
 
   /**

@@ -1213,14 +1213,15 @@ const ProductDetail = {
     document.getElementById('detailPurchasePrice').textContent = Utils.formatCurrency(p.purchasePrice);
     document.getElementById('detailStockDays').textContent = p.stockDays ? `${p.stockDays}日` : '-';
 
-    document.getElementById('detailProcessingCost').textContent = Utils.formatCurrency(p.processingCostTotal || 0);
+    const calc = p.calculated || {};
+    document.getElementById('detailProcessingCost').textContent = Utils.formatCurrency(calc.processingCostTotal || 0);
     document.getElementById('detailShippingCost').textContent = Utils.formatCurrency(p.shippingCost || 0);
-    document.getElementById('detailTotalCost').textContent = Utils.formatCurrency(p.totalCost || 0);
+    document.getElementById('detailTotalCost').textContent = Utils.formatCurrency(calc.totalCost || 0);
     document.getElementById('detailProfitMargin').textContent = p.profitMargin ? `${p.profitMargin}%` : '60%';
-    document.getElementById('detailSuggestedPrice').textContent = Utils.formatCurrency(p.suggestedPrice || 0);
+    document.getElementById('detailSuggestedPrice').textContent = Utils.formatCurrency(calc.suggestedPrice || 0);
     document.getElementById('detailPriceAdjustment').textContent = Utils.formatCurrency(p.priceAdjustment || 0);
-    document.getElementById('detailPriceExTax').textContent = Utils.formatCurrency(p.sellingPriceExTax || 0);
-    document.getElementById('detailPriceIncTax').textContent = Utils.formatCurrency(p.sellingPriceIncTax || 0);
+    document.getElementById('detailPriceExTax').textContent = Utils.formatCurrency(calc.sellingPriceExTax || 0);
+    document.getElementById('detailPriceIncTax').textContent = Utils.formatCurrency(calc.sellingPriceIncTax || 0);
 
     // 備考
     const remarksEl = document.getElementById('detailRemarks');
@@ -1448,9 +1449,9 @@ const ProductDetail = {
 
     try {
       const salesData = {
-        actualSalesPrice: actualSalesPrice,
-        salesDate: new Date(salesDate),
-        salesDestination: salesDestination || null,
+        soldPrice: actualSalesPrice,
+        soldDate: new Date(salesDate),
+        soldTo: salesDestination || null,
       };
 
       await Api.sellProduct(this.productId, salesData);
