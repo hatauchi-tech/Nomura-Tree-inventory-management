@@ -771,6 +771,45 @@ function uploadProductPhoto(base64Data: string, filename: string, mimeType: stri
   }
 }
 
+// ==================== カテゴリサジェストAPI ====================
+
+/**
+ * 製品データ＋マスターから大分類・中分類のユニーク値を取得
+ */
+function getUniqueCategoryValues() {
+  try {
+    const spreadsheetId = getSpreadsheetId();
+    const productService = new ProductService(spreadsheetId);
+    const majorCategoryRepo = new MajorCategoryRepository(spreadsheetId);
+    const minorCategoryRepo = new MinorCategoryRepository(spreadsheetId);
+
+    // 製品データからユニーク値を収集
+    const allProducts = productService.searchProducts({}, { page: 1, limit: 10000 });
+    const majorSet = new Set<string>();
+    const minorSet = new Set<string>();
+
+    allProducts.data.forEach((p: { majorCategory?: string; minorCategory?: string }) => {
+      if (p.majorCategory) majorSet.add(p.majorCategory);
+      if (p.minorCategory) minorSet.add(p.minorCategory);
+    });
+
+    // マスターデータからも追加
+    const majorMasters = majorCategoryRepo.findAllSorted();
+    majorMasters.forEach((m: { name: string }) => majorSet.add(m.name));
+
+    const minorMasters = minorCategoryRepo.findAllSorted();
+    minorMasters.forEach((m: { name: string }) => minorSet.add(m.name));
+
+    return {
+      majorCategories: Array.from(majorSet).sort(),
+      minorCategories: Array.from(minorSet).sort(),
+    };
+  } catch (error) {
+    console.error('getUniqueCategoryValues error:', error);
+    throw error;
+  }
+}
+
 // ==================== レポートAPI ====================
 
 /**
@@ -928,6 +967,7 @@ declare const global: {
   getMinorCategories: typeof getMinorCategories;
   addMasterData: typeof addMasterData;
   deleteMasterData: typeof deleteMasterData;
+  getUniqueCategoryValues: typeof getUniqueCategoryValues;
   // 棚卸しAPI
   startInventorySession: typeof startInventorySession;
   getInventoryProgress: typeof getInventoryProgress;
@@ -985,6 +1025,7 @@ global.getMajorCategories = getMajorCategories;
 global.getMinorCategories = getMinorCategories;
 global.addMasterData = addMasterData;
 global.deleteMasterData = deleteMasterData;
+global.getUniqueCategoryValues = getUniqueCategoryValues;
 // 棚卸しAPI
 global.startInventorySession = startInventorySession;
 global.getInventoryProgress = getInventoryProgress;

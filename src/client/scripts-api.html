@@ -149,6 +149,13 @@ const Api = {
   },
 
   /**
+   * カテゴリのユニーク値を取得（サジェスト用）
+   */
+  getUniqueCategoryValues() {
+    return this.call('getUniqueCategoryValues');
+  },
+
+  /**
    * マスターデータを追加
    */
   addMasterData(type, data) {

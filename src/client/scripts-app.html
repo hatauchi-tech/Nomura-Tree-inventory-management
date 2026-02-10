@@ -613,13 +613,25 @@ const ProductForm = {
     App.populateSelect('supplierId', App.masterData.suppliers, 'supplierId', 'name');
     App.populateSelect('storageLocationId', App.masterData.storageLocations, 'storageLocationId', 'name');
 
-    // 大分類・中分類をマスターデータから動的に設定
-    if (App.masterData.majorCategories.length > 0) {
-      App.populateSelect('majorCategory', App.masterData.majorCategories, 'name', 'name');
-    }
-    if (App.masterData.minorCategories.length > 0) {
-      App.populateSelect('minorCategory', App.masterData.minorCategories, 'name', 'name');
-    }
+    // 大分類・中分類のサジェスト入力を初期化
+    var majorSuggestions = App.masterData.majorCategories.map(function(c) { return c.name; });
+    var minorSuggestions = App.masterData.minorCategories.map(function(c) { return c.name; });
+    SuggestInput.init('majorCategory', 'majorCategorySuggest', majorSuggestions);
+    SuggestInput.init('minorCategory', 'minorCategorySuggest', minorSuggestions);
+
+    // カテゴリのユニーク値を非同期で取得してサジェスト候補を更新
+    Api.getUniqueCategoryValues().then(function(result) {
+      if (result) {
+        if (result.majorCategories) {
+          SuggestInput.updateSuggestions('majorCategory', result.majorCategories);
+        }
+        if (result.minorCategories) {
+          SuggestInput.updateSuggestions('minorCategory', result.minorCategories);
+        }
+      }
+    }).catch(function(e) {
+      console.log('Failed to load category suggestions:', e);
+    });
 
     // フォームをリセット
     document.getElementById('productForm').reset();
@@ -1119,7 +1131,7 @@ const ProductForm = {
     const errors = [];
 
     if (!data.majorCategory) {
-      errors.push('大分類を選択してください');
+      errors.push('大分類を入力してください');
     }
 
     if (!data.productName || data.productName.length < 1) {

@@ -130,7 +130,7 @@ export const SHEET_NAMES = {
 export type SheetName = typeof SHEET_NAMES[keyof typeof SHEET_NAMES];
 
 /**
- * 大分類
+ * 大分類（自由記述。デフォルト候補はマスターシートから取得）
  */
 export const MAJOR_CATEGORIES = [
   'テーブル',
@@ -140,14 +140,14 @@ export const MAJOR_CATEGORIES = [
   'その他',
 ] as const;
 
-export type MajorCategory = typeof MAJOR_CATEGORIES[number];
+export type MajorCategory = string;
 
 /**
- * 中分類
+ * 中分類（自由記述。デフォルト候補はマスターシートから取得）
  */
 export const MINOR_CATEGORIES = ['家具', '雑貨', '加工材料', 'その他'] as const;
 
-export type MinorCategory = typeof MINOR_CATEGORIES[number];
+export type MinorCategory = string;
 
 /**
  * 大分類マスター
