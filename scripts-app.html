@@ -975,7 +975,9 @@ const ProductForm = {
     setPreview('previewShippingCost', Utils.formatCurrency(shippingCost));
     setPreview('previewTotalCost', Utils.formatCurrency(totalCost));
     setPreview('previewSuggestedPrice', Utils.formatCurrency(suggestedPrice));
+    setPreview('previewSuggestedPriceInc', Utils.formatCurrency(Math.round(suggestedPrice * 1.1)));
     setPreview('previewPriceAdjustment', Utils.formatCurrency(priceAdjustment));
+    setPreview('previewPriceAdjustmentInc', Utils.formatCurrency(Math.round(priceAdjustment * 1.1)));
     setPreview('previewPriceExTax', Utils.formatCurrency(priceExTax));
     setPreview('previewPriceIncTax', Utils.formatCurrency(priceIncTax));
   },
@@ -1116,7 +1118,7 @@ const ProductForm = {
       rawPhotoUrls: rawPhotoUrl,
       finishedPhotoUrls: finishedPhotoUrl,
       supplierId: document.getElementById('supplierId').value,
-      purchaseDate: new Date(document.getElementById('purchaseDate').value),
+      purchaseDate: document.getElementById('purchaseDate').value,
       purchasePrice: parseInt(document.getElementById('purchasePrice').value.replace(/,/g, '')) || 0,
       storageLocationId: document.getElementById('storageLocationId').value,
       shippingCost: parseInt(document.getElementById('shippingCost').value.replace(/,/g, '')) || undefined,
@@ -1629,9 +1631,9 @@ const ProductDetail = {
       const deliveryDateValue = document.getElementById('sellDeliveryDate').value;
       const salesData = {
         soldPrice: actualSalesPrice,
-        soldDate: new Date(salesDate),
+        soldDate: salesDate,
         soldTo: salesDestination || null,
-        deliveryDate: deliveryDateValue ? new Date(deliveryDateValue) : undefined,
+        deliveryDate: deliveryDateValue || undefined,
       };
 
       await Api.sellProduct(this.productId, salesData);
@@ -2134,8 +2136,6 @@ const Master = {
     this.renderSuppliers();
     this.renderProcessors();
     this.renderStorageLocations();
-    this.renderMajorCategories();
-    this.renderMinorCategories();
   },
 
   switchTab(tab) {
