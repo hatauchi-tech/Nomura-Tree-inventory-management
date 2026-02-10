@@ -630,13 +630,13 @@ const ProductForm = {
       document.getElementById('woodType').value = product.woodType || '';
       document.getElementById('storageLocationId').value = product.storageLocationId || '';
 
-      // サイズ情報
-      document.getElementById('rawLength').value = product.rawLength || '';
-      document.getElementById('rawWidth').value = product.rawWidth || '';
-      document.getElementById('rawThickness').value = product.rawThickness || '';
-      document.getElementById('finishedLength').value = product.finishedLength || '';
-      document.getElementById('finishedWidth').value = product.finishedWidth || '';
-      document.getElementById('finishedThickness').value = product.finishedThickness || '';
+      // サイズ情報（ネストされたオブジェクトから読み取り）
+      document.getElementById('rawLength').value = (product.rawSize && product.rawSize.length) || '';
+      document.getElementById('rawWidth').value = (product.rawSize && product.rawSize.width) || '';
+      document.getElementById('rawThickness').value = (product.rawSize && product.rawSize.thickness) || '';
+      document.getElementById('finishedLength').value = (product.finishedSize && product.finishedSize.length) || '';
+      document.getElementById('finishedWidth').value = (product.finishedSize && product.finishedSize.width) || '';
+      document.getElementById('finishedThickness').value = (product.finishedSize && product.finishedSize.thickness) || '';
 
       // 仕入れ情報
       document.getElementById('supplierId').value = product.supplierId || '';
@@ -648,8 +648,8 @@ const ProductForm = {
 
       // 価格設定
       document.getElementById('shippingCost').value = product.shippingCost || '';
-      document.getElementById('profitMargin').value = product.profitMargin || '60';
-      document.getElementById('priceAdjustment').value = product.priceAdjustment || '0';
+      document.getElementById('profitMargin').value = (product.profitMargin != null && product.profitMargin !== '') ? product.profitMargin : '60';
+      document.getElementById('priceAdjustment').value = (product.priceAdjustment != null && product.priceAdjustment !== '') ? product.priceAdjustment : '0';
 
       // 備考
       document.getElementById('remarks').value = product.remarks || '';
@@ -1028,7 +1028,7 @@ const ProductForm = {
       purchasePrice: parseInt(document.getElementById('purchasePrice').value.replace(/,/g, '')) || 0,
       storageLocationId: document.getElementById('storageLocationId').value,
       shippingCost: parseInt(document.getElementById('shippingCost').value.replace(/,/g, '')) || undefined,
-      profitMargin: parseFloat(document.getElementById('profitMargin').value) || 60,
+      profitMargin: document.getElementById('profitMargin').value !== '' ? parseFloat(document.getElementById('profitMargin').value) : 60,
       priceAdjustment: parseInt(document.getElementById('priceAdjustment').value.replace(/,/g, '')) || 0,
       remarks: document.getElementById('remarks').value.trim() || undefined,
     };
