@@ -16,6 +16,8 @@ import {
   SupplierRepository,
   ProcessorRepository,
   StorageLocationRepository,
+  MajorCategoryRepository,
+  MinorCategoryRepository,
 } from './repositories/MasterRepository';
 import {
   ProductSearchCondition,
@@ -28,6 +30,8 @@ import {
   CreateSupplierDto,
   CreateProcessorDto,
   CreateStorageLocationDto,
+  CreateMajorCategoryDto,
+  CreateMinorCategoryDto,
 } from './types/master';
 import { ConfirmationMethod, PaginationOptions } from './types/common';
 import { setupAllSheets, setupSheetsOnly, clearAllData } from './setupData';
@@ -438,11 +442,39 @@ function getStorageLocations() {
 }
 
 /**
+ * 大分類一覧取得
+ */
+function getMajorCategories() {
+  try {
+    const repo = new MajorCategoryRepository(getSpreadsheetId());
+    const result = repo.findAllSorted();
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('getMajorCategories error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 中分類一覧取得
+ */
+function getMinorCategories() {
+  try {
+    const repo = new MinorCategoryRepository(getSpreadsheetId());
+    const result = repo.findAllSorted();
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('getMinorCategories error:', error);
+    throw error;
+  }
+}
+
+/**
  * マスターデータ追加
  */
 function addMasterData(
-  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation',
-  data: CreateWoodTypeDto | CreateSupplierDto | CreateProcessorDto | CreateStorageLocationDto
+  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation' | 'majorCategory' | 'minorCategory',
+  data: CreateWoodTypeDto | CreateSupplierDto | CreateProcessorDto | CreateStorageLocationDto | CreateMajorCategoryDto | CreateMinorCategoryDto
 ) {
   try {
     const spreadsheetId = getSpreadsheetId();
@@ -469,6 +501,16 @@ function addMasterData(
         result = repo.createFromDto(data as CreateStorageLocationDto);
         break;
       }
+      case 'majorCategory': {
+        const repo = new MajorCategoryRepository(spreadsheetId);
+        result = repo.createFromDto(data as CreateMajorCategoryDto);
+        break;
+      }
+      case 'minorCategory': {
+        const repo = new MinorCategoryRepository(spreadsheetId);
+        result = repo.createFromDto(data as CreateMinorCategoryDto);
+        break;
+      }
       default:
         throw new Error(`Unknown master type: ${type}`);
     }
@@ -483,7 +525,7 @@ function addMasterData(
  * マスターデータ削除
  */
 function deleteMasterData(
-  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation',
+  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation' | 'majorCategory' | 'minorCategory',
   id: string
 ) {
   try {
@@ -504,6 +546,14 @@ function deleteMasterData(
       }
       case 'storageLocation': {
         const repo = new StorageLocationRepository(spreadsheetId);
+        return repo.delete(id);
+      }
+      case 'majorCategory': {
+        const repo = new MajorCategoryRepository(spreadsheetId);
+        return repo.delete(id);
+      }
+      case 'minorCategory': {
+        const repo = new MinorCategoryRepository(spreadsheetId);
         return repo.delete(id);
       }
       default:
@@ -874,6 +924,8 @@ declare const global: {
   getSuppliers: typeof getSuppliers;
   getProcessors: typeof getProcessors;
   getStorageLocations: typeof getStorageLocations;
+  getMajorCategories: typeof getMajorCategories;
+  getMinorCategories: typeof getMinorCategories;
   addMasterData: typeof addMasterData;
   deleteMasterData: typeof deleteMasterData;
   // 棚卸しAPI
@@ -929,6 +981,8 @@ global.getWoodTypes = getWoodTypes;
 global.getSuppliers = getSuppliers;
 global.getProcessors = getProcessors;
 global.getStorageLocations = getStorageLocations;
+global.getMajorCategories = getMajorCategories;
+global.getMinorCategories = getMinorCategories;
 global.addMasterData = addMasterData;
 global.deleteMasterData = deleteMasterData;
 // 棚卸しAPI

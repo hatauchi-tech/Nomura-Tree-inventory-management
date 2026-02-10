@@ -123,6 +123,8 @@ export const SHEET_NAMES = {
   SALES_CANCEL_HISTORY: '販売キャンセル履歴',
   PHOTOS: '写真管理',
   SEQUENCES: 'シーケンス管理',
+  MAJOR_CATEGORIES_MASTER: '大分類マスター',
+  MINOR_CATEGORIES_MASTER: '中分類マスター',
 } as const;
 
 export type SheetName = typeof SHEET_NAMES[keyof typeof SHEET_NAMES];
@@ -146,6 +148,40 @@ export type MajorCategory = typeof MAJOR_CATEGORIES[number];
 export const MINOR_CATEGORIES = ['家具', '雑貨', '加工材料', 'その他'] as const;
 
 export type MinorCategory = typeof MINOR_CATEGORIES[number];
+
+/**
+ * 大分類マスター
+ */
+export interface MajorCategoryMaster {
+  categoryId: string;  // MCAT-0001 format
+  name: string;
+  displayOrder: number;
+}
+
+/**
+ * 中分類マスター
+ */
+export interface MinorCategoryMaster {
+  categoryId: string;  // SCAT-0001 format
+  name: string;
+  displayOrder: number;
+}
+
+/**
+ * 大分類登録用DTO
+ */
+export interface CreateMajorCategoryDto {
+  name: string;
+  displayOrder?: number;
+}
+
+/**
+ * 中分類登録用DTO
+ */
+export interface CreateMinorCategoryDto {
+  name: string;
+  displayOrder?: number;
+}
 
 /**
  * 加工種別

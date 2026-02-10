@@ -17,6 +17,8 @@ const SHEETS = {
   STORAGE_LOCATIONS: '保管場所マスター',
   INVENTORY_SESSIONS: '棚卸しセッション',
   INVENTORY_DETAILS: '棚卸し詳細',
+  MAJOR_CATEGORIES: '大分類マスター',
+  MINOR_CATEGORIES: '中分類マスター',
 };
 
 // ヘッダー定義
@@ -47,6 +49,8 @@ const HEADERS = {
     '詳細ID', 'セッションID', '製品ID', '確認状況', '確認方法',
     '確認者', '確認日時', '差異種別', '差異理由', '対応内容',
   ],
+  [SHEETS.MAJOR_CATEGORIES]: ['カテゴリID', 'カテゴリ名', '表示順'],
+  [SHEETS.MINOR_CATEGORIES]: ['カテゴリID', 'カテゴリ名', '表示順'],
 };
 
 // ==================== ダミーデータ ====================
@@ -91,6 +95,23 @@ const STORAGE_LOCATIONS_DATA = [
   ['LOC-004', 'モデルハウスA', 4],
   ['LOC-005', 'モデルハウスB', 5],
   ['LOC-006', 'その他', 99],
+];
+
+// 大分類マスター
+const MAJOR_CATEGORIES_DATA = [
+  ['MCAT-0001', 'テーブル', 1],
+  ['MCAT-0002', 'カウンター', 2],
+  ['MCAT-0003', 'スツール', 3],
+  ['MCAT-0004', '足', 4],
+  ['MCAT-0005', 'その他', 99],
+];
+
+// 中分類マスター
+const MINOR_CATEGORIES_DATA = [
+  ['SCAT-0001', '家具', 1],
+  ['SCAT-0002', '雑貨', 2],
+  ['SCAT-0003', '加工材料', 3],
+  ['SCAT-0004', 'その他', 99],
 ];
 
 // ==================== ユーティリティ関数 ====================
@@ -414,6 +435,8 @@ function setupAllSheets(): void {
   insertData(ss, SHEETS.SUPPLIERS, SUPPLIERS_DATA);
   insertData(ss, SHEETS.PROCESSORS, PROCESSORS_DATA);
   insertData(ss, SHEETS.STORAGE_LOCATIONS, STORAGE_LOCATIONS_DATA);
+  insertData(ss, SHEETS.MAJOR_CATEGORIES, MAJOR_CATEGORIES_DATA);
+  insertData(ss, SHEETS.MINOR_CATEGORIES, MINOR_CATEGORIES_DATA);
 
   // 製品データ生成・投入
   const products = generateProducts();

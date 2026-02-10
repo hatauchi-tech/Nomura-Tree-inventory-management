@@ -135,6 +135,20 @@ const Api = {
   },
 
   /**
+   * 大分類一覧を取得
+   */
+  getMajorCategories() {
+    return this.call('getMajorCategories');
+  },
+
+  /**
+   * 中分類一覧を取得
+   */
+  getMinorCategories() {
+    return this.call('getMinorCategories');
+  },
+
+  /**
    * マスターデータを追加
    */
   addMasterData(type, data) {

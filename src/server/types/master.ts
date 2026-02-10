@@ -2,7 +2,7 @@
  * マスターデータ型定義
  */
 
-import { ProcessingType, SheetRowData } from './common';
+import { ProcessingType, SheetRowData, MajorCategoryMaster, MinorCategoryMaster, CreateMajorCategoryDto, CreateMinorCategoryDto } from './common';
 
 /**
  * 樹種マスター
@@ -227,6 +227,65 @@ export interface CreateStorageLocationDto {
   name: string;
   displayOrder?: number;
 }
+
+// ==================== 大分類マスター ====================
+
+export const MAJOR_CATEGORY_COLUMNS = {
+  CATEGORY_ID: 0,
+  NAME: 1,
+  DISPLAY_ORDER: 2,
+} as const;
+
+export const MAJOR_CATEGORY_HEADERS = ['カテゴリID', 'カテゴリ名', '表示順'];
+
+export function rowToMajorCategory(row: SheetRowData): MajorCategoryMaster {
+  const C = MAJOR_CATEGORY_COLUMNS;
+  return {
+    categoryId: String(row[C.CATEGORY_ID] ?? ''),
+    name: String(row[C.NAME] ?? ''),
+    displayOrder: Number(row[C.DISPLAY_ORDER]) || 0,
+  };
+}
+
+export function majorCategoryToRow(category: MajorCategoryMaster): SheetRowData {
+  const C = MAJOR_CATEGORY_COLUMNS;
+  const row: SheetRowData = new Array(3).fill('');
+  row[C.CATEGORY_ID] = category.categoryId;
+  row[C.NAME] = category.name;
+  row[C.DISPLAY_ORDER] = category.displayOrder;
+  return row;
+}
+
+// ==================== 中分類マスター ====================
+
+export const MINOR_CATEGORY_COLUMNS = {
+  CATEGORY_ID: 0,
+  NAME: 1,
+  DISPLAY_ORDER: 2,
+} as const;
+
+export const MINOR_CATEGORY_HEADERS = ['カテゴリID', 'カテゴリ名', '表示順'];
+
+export function rowToMinorCategory(row: SheetRowData): MinorCategoryMaster {
+  const C = MINOR_CATEGORY_COLUMNS;
+  return {
+    categoryId: String(row[C.CATEGORY_ID] ?? ''),
+    name: String(row[C.NAME] ?? ''),
+    displayOrder: Number(row[C.DISPLAY_ORDER]) || 0,
+  };
+}
+
+export function minorCategoryToRow(category: MinorCategoryMaster): SheetRowData {
+  const C = MINOR_CATEGORY_COLUMNS;
+  const row: SheetRowData = new Array(3).fill('');
+  row[C.CATEGORY_ID] = category.categoryId;
+  row[C.NAME] = category.name;
+  row[C.DISPLAY_ORDER] = category.displayOrder;
+  return row;
+}
+
+// Re-export for convenience
+export type { MajorCategoryMaster, MinorCategoryMaster, CreateMajorCategoryDto, CreateMinorCategoryDto };
 
 /**
  * 初期樹種データ
