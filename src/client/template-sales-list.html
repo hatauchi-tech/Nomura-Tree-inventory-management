@@ -1,0 +1,142 @@
+<div class="page-header">
+  <h2 class="page-title">販売済み一覧</h2>
+</div>
+
+<!-- フィルター -->
+<div class="sales-filter-bar">
+  <div class="filter-inputs">
+    <div class="filter-group">
+      <label class="filter-label">開始日</label>
+      <input type="date" class="form-input form-input-sm" id="salesStartDate">
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">終了日</label>
+      <input type="date" class="form-input form-input-sm" id="salesEndDate">
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">樹種</label>
+      <select class="form-select form-select-sm" id="salesFilterWoodType">
+        <option value="">すべて</option>
+      </select>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button class="btn btn-primary btn-sm" onclick="SalesList.applyFilter()">適用</button>
+    <button class="btn btn-secondary btn-sm" onclick="SalesList.resetFilter()">リセット</button>
+    <button class="btn btn-secondary btn-sm" onclick="SalesList.exportCsv()">CSV出力</button>
+  </div>
+</div>
+
+<!-- 統計サマリー -->
+<div class="stats-grid" id="salesStatsGrid">
+  <div class="stat-card">
+    <div class="stat-value" id="totalSalesCount">-</div>
+    <div class="stat-label">販売数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="totalRevenue">-</div>
+    <div class="stat-label">売上総額</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="totalProfit">-</div>
+    <div class="stat-label">利益</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="avgProfitMargin">-</div>
+    <div class="stat-label">平均利益率</div>
+  </div>
+</div>
+
+<!-- 販売済み製品テーブル -->
+<div class="card sales-table-card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>販売日</th>
+            <th>製品名</th>
+            <th>樹種</th>
+            <th class="text-right">販売価格</th>
+            <th>販売先</th>
+            <th style="width: 100px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="salesTableBody">
+          <tr>
+            <td colspan="6" class="text-muted text-center">読み込み中...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+/* 販売済み一覧ページ専用スタイル */
+.sales-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+  margin-bottom: var(--spacing-lg);
+}
+
+.filter-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.filter-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.filter-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* 小さめの入力フィールド */
+.form-input-sm,
+.form-select-sm {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+}
+
+/* 統計グリッドとテーブルの間隔 */
+.sales-table-card {
+  margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 767px) {
+  .sales-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-inputs {
+    flex-direction: column;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+</style>

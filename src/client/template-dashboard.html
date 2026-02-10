@@ -1,0 +1,110 @@
+<div class="page-header">
+  <h2 class="page-title">ダッシュボード</h2>
+  <p class="page-subtitle">在庫状況・販売状況の概要</p>
+</div>
+
+<!-- 期間フィルター -->
+<div class="content-area mb-md">
+  <div class="flex gap-md items-center" style="flex-wrap: wrap;">
+    <div class="form-group mb-0" style="min-width: 150px;">
+      <label class="form-label">期間</label>
+      <select class="form-select" id="dashboardPeriod" onchange="Dashboard.onPeriodChange()">
+        <option value="all">全期間</option>
+        <option value="thisMonth" selected>今月</option>
+        <option value="lastMonth">先月</option>
+        <option value="thisYear">今年</option>
+        <option value="custom">カスタム</option>
+      </select>
+    </div>
+    <div class="form-group mb-0 hidden" id="customDateRange" style="min-width: 300px;">
+      <label class="form-label">期間指定</label>
+      <div class="flex gap-sm items-center">
+        <input type="date" class="form-input" id="dashboardStartDate" style="flex: 1;">
+        <span>〜</span>
+        <input type="date" class="form-input" id="dashboardEndDate" style="flex: 1;">
+        <button class="btn btn-secondary btn-sm" onclick="Dashboard.applyCustomDateRange()">適用</button>
+      </div>
+    </div>
+    <div class="form-group mb-0">
+      <label class="form-label">&nbsp;</label>
+      <button class="btn btn-secondary" onclick="Dashboard.refresh()">更新</button>
+    </div>
+  </div>
+</div>
+
+<!-- 在庫指標 -->
+<div class="content-area mb-md">
+  <h3 class="form-section-title">在庫指標</h3>
+  <div class="dashboard-grid">
+    <div class="card stat-card">
+      <div class="stat-value" id="statTotalInventory">-</div>
+      <div class="stat-label">総在庫数</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-value" id="statAvailableProducts">-</div>
+      <div class="stat-label">販売中</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-value" id="statInventoryValue">-</div>
+      <div class="stat-label">在庫総額（税込）</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-value" id="statLowStock">-</div>
+      <div class="stat-label">長期在庫（90日以上）</div>
+    </div>
+  </div>
+</div>
+
+<!-- 販売指標 -->
+<div class="content-area mb-md">
+  <h3 class="form-section-title">販売指標 <span class="text-muted text-sm" id="salesPeriodLabel">（今月）</span></h3>
+  <div class="dashboard-grid">
+    <div class="card stat-card">
+      <div class="stat-value" id="statTotalSalesCount">-</div>
+      <div class="stat-label">総販売数</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-value" id="statSoldProducts">-</div>
+      <div class="stat-label">販売済み</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-value" id="statSalesRevenue">-</div>
+      <div class="stat-label">販売総額</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-value" id="statSalesProfit">-</div>
+      <div class="stat-label">利益（概算）</div>
+    </div>
+  </div>
+</div>
+
+<!-- クイックアクション -->
+<div class="content-area mt-md">
+  <h3 class="form-section-title">クイックアクション</h3>
+  <div class="grid grid-2">
+    <button class="btn btn-primary btn-block" onclick="App.navigateTo('product-new')">
+      ➕ 新規製品登録
+    </button>
+    <button class="btn btn-secondary btn-block" onclick="App.navigateTo('inventory')">
+      📋 棚卸しを開始
+    </button>
+  </div>
+</div>
+
+<!-- アラート -->
+<div class="content-area mt-md">
+  <h3 class="form-section-title">アラート</h3>
+  <div id="alertsContainer">
+    <p class="text-muted">アラートはありません。</p>
+  </div>
+</div>
+
+<!-- 最近の登録 -->
+<div class="content-area mt-md">
+  <h3 class="form-section-title">最近登録された製品</h3>
+  <div id="recentProductsContainer">
+    <div class="product-grid" id="recentProductsGrid">
+      <p class="text-muted">製品データを読み込み中...</p>
+    </div>
+  </div>
+</div>
