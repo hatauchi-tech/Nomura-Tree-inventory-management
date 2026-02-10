@@ -212,7 +212,7 @@
 
       <div class="form-group">
         <label class="form-label form-label-required" for="purchasePrice">入荷単価（税抜）</label>
-        <input type="number" class="form-input" id="purchasePrice" name="purchasePrice" required min="0" max="99999999" placeholder="円">
+        <input type="text" class="form-input" id="purchasePrice" name="purchasePrice" required inputmode="numeric" placeholder="円">
       </div>
     </div>
   </div>
@@ -238,7 +238,7 @@
     <div class="form-row form-row-3">
       <div class="form-group">
         <label class="form-label" for="shippingCost">販売時送料</label>
-        <input type="number" class="form-input" id="shippingCost" name="shippingCost" min="0" max="9999999" placeholder="円">
+        <input type="text" class="form-input" id="shippingCost" name="shippingCost" inputmode="numeric" placeholder="円">
       </div>
 
       <div class="form-group">
@@ -249,7 +249,7 @@
 
       <div class="form-group">
         <label class="form-label" for="priceAdjustment">価格調整額</label>
-        <input type="number" class="form-input" id="priceAdjustment" name="priceAdjustment" value="0" placeholder="円（マイナス可）">
+        <input type="text" class="form-input" id="priceAdjustment" name="priceAdjustment" value="0" inputmode="numeric" placeholder="円（マイナス可）">
         <span class="form-hint">値引き: マイナス / 上乗せ: プラス</span>
       </div>
     </div>

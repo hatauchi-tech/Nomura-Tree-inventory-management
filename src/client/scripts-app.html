@@ -266,9 +266,6 @@ const Dashboard = {
       // 最近の製品を表示
       this.renderRecentProducts(recentProducts?.data || []);
 
-      // アラートを表示
-      this.renderAlerts(inventoryStats);
-
     } catch (error) {
       console.error('Dashboard load error:', error);
       Toast.error('データの読み込みに失敗しました');
@@ -282,7 +279,6 @@ const Dashboard = {
     document.getElementById('statTotalInventory').textContent = stats.totalProducts || 0;
     document.getElementById('statAvailableProducts').textContent = stats.availableProducts || 0;
     document.getElementById('statInventoryValue').textContent = Utils.formatCurrency(stats.totalInventoryValue || 0);
-    document.getElementById('statLowStock').textContent = stats.lowStockItems || 0;
   },
 
   renderSalesStats(stats) {
@@ -303,31 +299,6 @@ const Dashboard = {
     if (labelEl) {
       labelEl.textContent = `（${this.periodLabel}）`;
     }
-  },
-
-  renderAlerts(stats) {
-    const container = document.getElementById('alertsContainer');
-    const alerts = [];
-
-    if (stats && stats.lowStockItems > 0) {
-      alerts.push({
-        type: 'warning',
-        message: `90日以上在庫がある製品が ${stats.lowStockItems} 件あります。`,
-      });
-    }
-
-    if (alerts.length === 0) {
-      container.innerHTML = '<p class="text-muted">アラートはありません。</p>';
-      return;
-    }
-
-    container.innerHTML = alerts.map(alert => `
-      <div class="card mb-sm" style="border-left: 4px solid ${alert.type === 'warning' ? 'var(--color-warning)' : 'var(--color-error)'};">
-        <div class="card-body">
-          <p class="mb-0">${Utils.escapeHtml(alert.message)}</p>
-        </div>
-      </div>
-    `).join('');
   },
 
   renderRecentProducts(products) {
@@ -614,8 +585,23 @@ const ProductForm = {
       return false;
     };
 
+    // Enterキーでフォーム送信を防止（textarea以外）
+    form.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    });
+
     // 価格プレビュー更新
     this.setupPricePreview();
+
+    // 金額入力フィールドにカンマ区切りフォーマットを適用
+    ['purchasePrice', 'shippingCost', 'priceAdjustment'].forEach(function(id) {
+      var input = document.getElementById(id);
+      if (input) {
+        Utils.formatPriceInput(input);
+      }
+    });
 
     // 編集モードの場合は既存データを読み込み
     if (this.isEditMode) {
@@ -865,10 +851,10 @@ const ProductForm = {
   },
 
   updatePricePreview() {
-    const purchasePrice = parseFloat(document.getElementById('purchasePrice')?.value) || 0;
-    const shippingCost = parseFloat(document.getElementById('shippingCost')?.value) || 0;
+    const purchasePrice = parseFloat((document.getElementById('purchasePrice')?.value || '').replace(/,/g, '')) || 0;
+    const shippingCost = parseFloat((document.getElementById('shippingCost')?.value || '').replace(/,/g, '')) || 0;
     const profitMargin = parseFloat(document.getElementById('profitMargin')?.value) || 60;
-    const priceAdjustment = parseFloat(document.getElementById('priceAdjustment')?.value) || 0;
+    const priceAdjustment = parseFloat((document.getElementById('priceAdjustment')?.value || '').replace(/,/g, '')) || 0;
 
     // 加工費合計を計算
     const processingCostTotal = this.getProcessingCostsTotal();
@@ -976,7 +962,7 @@ const ProductForm = {
       html += '<div class="form-group">';
       html += '<label class="form-label">金額（税抜）</label>';
       html += '<div class="flex gap-sm">';
-      html += '<input type="number" class="form-input" value="' + (cost.amount || '') + '" min="0" max="99999999" onchange="ProductForm.updateProcessingCost(' + cost.tempId + ', \'amount\', parseInt(this.value) || 0)" placeholder="円">';
+      html += '<input type="text" class="form-input processing-cost-amount" inputmode="numeric" value="' + (cost.amount ? Number(cost.amount).toLocaleString() : '') + '" onchange="ProductForm.updateProcessingCost(' + cost.tempId + ', \'amount\', parseInt(this.value.replace(/,/g, \'\')) || 0)" placeholder="円">';
       html += '<button type="button" class="btn btn-danger btn-sm" onclick="ProductForm.removeProcessingCostRow(' + cost.tempId + ')">削除</button>';
       html += '</div>';
       html += '</div>';
@@ -984,6 +970,11 @@ const ProductForm = {
       html += '</div>';
     }
     container.innerHTML = html;
+
+    // 加工費の金額フィールドにカンマ区切りフォーマットを適用
+    container.querySelectorAll('.processing-cost-amount').forEach(function(input) {
+      Utils.formatPriceInput(input);
+    });
   },
 
   // 加工費データを更新
@@ -1034,11 +1025,11 @@ const ProductForm = {
       finishedPhotoUrls: finishedPhotoUrl,
       supplierId: document.getElementById('supplierId').value,
       purchaseDate: new Date(document.getElementById('purchaseDate').value),
-      purchasePrice: parseInt(document.getElementById('purchasePrice').value) || 0,
+      purchasePrice: parseInt(document.getElementById('purchasePrice').value.replace(/,/g, '')) || 0,
       storageLocationId: document.getElementById('storageLocationId').value,
-      shippingCost: parseInt(document.getElementById('shippingCost').value) || undefined,
+      shippingCost: parseInt(document.getElementById('shippingCost').value.replace(/,/g, '')) || undefined,
       profitMargin: parseFloat(document.getElementById('profitMargin').value) || 60,
-      priceAdjustment: parseInt(document.getElementById('priceAdjustment').value) || 0,
+      priceAdjustment: parseInt(document.getElementById('priceAdjustment').value.replace(/,/g, '')) || 0,
       remarks: document.getElementById('remarks').value.trim() || undefined,
     };
   },
