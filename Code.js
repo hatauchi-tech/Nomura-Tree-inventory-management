@@ -2465,6 +2465,7 @@ const ProcessingCostService_1 = __webpack_require__(927);
 const InventoryService_1 = __webpack_require__(255);
 const SalesService_1 = __webpack_require__(871);
 const MasterRepository_1 = __webpack_require__(570);
+const common_1 = __webpack_require__(798);
 const setupData_1 = __webpack_require__(552);
 // ==================== 設定 ====================
 /**
@@ -3149,10 +3150,11 @@ function getUniqueCategoryValues() {
         const productService = new ProductService_1.ProductService(spreadsheetId);
         const majorCategoryRepo = new MasterRepository_1.MajorCategoryRepository(spreadsheetId);
         const minorCategoryRepo = new MasterRepository_1.MinorCategoryRepository(spreadsheetId);
+        // デフォルト候補を初期値として設定
+        const majorSet = new Set(common_1.MAJOR_CATEGORIES);
+        const minorSet = new Set(common_1.MINOR_CATEGORIES);
         // 製品データからユニーク値を収集
         const allProducts = productService.searchProducts({}, { page: 1, limit: 10000 });
-        const majorSet = new Set();
-        const minorSet = new Set();
         allProducts.data.forEach((p) => {
             if (p.majorCategory)
                 majorSet.add(p.majorCategory);

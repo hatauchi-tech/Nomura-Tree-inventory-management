@@ -613,9 +613,14 @@ const ProductForm = {
     App.populateSelect('supplierId', App.masterData.suppliers, 'supplierId', 'name');
     App.populateSelect('storageLocationId', App.masterData.storageLocations, 'storageLocationId', 'name');
 
-    // 大分類・中分類のサジェスト入力を初期化
-    var majorSuggestions = App.masterData.majorCategories.map(function(c) { return c.name; });
-    var minorSuggestions = App.masterData.minorCategories.map(function(c) { return c.name; });
+    // 大分類・中分類のサジェスト入力を初期化（デフォルト候補＋マスターデータ）
+    var defaultMajor = ['テーブル', 'カウンター', 'スツール', '足', 'その他'];
+    var defaultMinor = ['家具', '雑貨', '加工材料', 'その他'];
+    var majorFromMaster = App.masterData.majorCategories.map(function(c) { return c.name; });
+    var minorFromMaster = App.masterData.minorCategories.map(function(c) { return c.name; });
+    // デフォルト候補とマスターデータをマージ（重複排除）
+    var majorSuggestions = defaultMajor.concat(majorFromMaster.filter(function(v) { return defaultMajor.indexOf(v) === -1; }));
+    var minorSuggestions = defaultMinor.concat(minorFromMaster.filter(function(v) { return defaultMinor.indexOf(v) === -1; }));
     SuggestInput.init('majorCategory', 'majorCategorySuggest', majorSuggestions);
     SuggestInput.init('minorCategory', 'minorCategorySuggest', minorSuggestions);
 
