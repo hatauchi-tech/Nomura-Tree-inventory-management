@@ -249,6 +249,14 @@
 
       <div class="form-group">
         <label class="form-label" for="priceAdjustment">価格調整額</label>
+        <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <input type="radio" name="priceAdjustmentType" value="exTax" checked> 税別
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <input type="radio" name="priceAdjustmentType" value="incTax"> 税込
+          </label>
+        </div>
         <input type="text" class="form-input" id="priceAdjustment" name="priceAdjustment" value="0" inputmode="numeric" placeholder="円（マイナス可）">
         <span class="form-hint">値引き: マイナス / 上乗せ: プラス</span>
       </div>

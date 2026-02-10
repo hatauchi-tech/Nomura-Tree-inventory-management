@@ -750,6 +750,11 @@ const ProductForm = {
         input.oninput = function() { ProductForm.updatePricePreview(); };
       }
     });
+
+    // 価格調整額の税別・税込ラジオボタン
+    document.querySelectorAll('input[name="priceAdjustmentType"]').forEach(function(radio) {
+      radio.addEventListener('change', function() { ProductForm.updatePricePreview(); });
+    });
   },
 
   // 写真プレビュー設定（初期化用）
@@ -900,7 +905,12 @@ const ProductForm = {
     const purchasePrice = parseFloat((document.getElementById('purchasePrice')?.value || '').replace(/,/g, '')) || 0;
     const shippingCost = parseFloat((document.getElementById('shippingCost')?.value || '').replace(/,/g, '')) || 0;
     const profitMargin = parseFloat(document.getElementById('profitMargin')?.value) || 60;
-    const priceAdjustment = parseFloat((document.getElementById('priceAdjustment')?.value || '').replace(/,/g, '')) || 0;
+    const priceAdjustmentRaw = parseFloat((document.getElementById('priceAdjustment')?.value || '').replace(/,/g, '')) || 0;
+
+    // 価格調整額の税別・税込判定
+    const adjustmentTypeEl = document.querySelector('input[name="priceAdjustmentType"]:checked');
+    const adjustmentType = adjustmentTypeEl ? adjustmentTypeEl.value : 'exTax';
+    const priceAdjustment = adjustmentType === 'incTax' ? Math.round(priceAdjustmentRaw / 1.1) : priceAdjustmentRaw;
 
     // 加工費合計を計算
     const processingCostTotal = this.getProcessingCostsTotal();
@@ -1075,7 +1085,12 @@ const ProductForm = {
       storageLocationId: document.getElementById('storageLocationId').value,
       shippingCost: parseInt(document.getElementById('shippingCost').value.replace(/,/g, '')) || undefined,
       profitMargin: document.getElementById('profitMargin').value !== '' ? parseFloat(document.getElementById('profitMargin').value) : 60,
-      priceAdjustment: parseInt(document.getElementById('priceAdjustment').value.replace(/,/g, '')) || 0,
+      priceAdjustment: (function() {
+        var raw = parseInt(document.getElementById('priceAdjustment').value.replace(/,/g, '')) || 0;
+        var typeEl = document.querySelector('input[name="priceAdjustmentType"]:checked');
+        var type = typeEl ? typeEl.value : 'exTax';
+        return type === 'incTax' ? Math.round(raw / 1.1) : raw;
+      })(),
       remarks: document.getElementById('remarks').value.trim() || undefined,
     };
   },
@@ -1298,7 +1313,8 @@ const ProductDetail = {
     var finishedUrl = p.finishedPhotoUrls ? this.convertDriveUrl(p.finishedPhotoUrls) : null;
 
     if (!rawUrl && !finishedUrl) {
-      gallery.innerHTML = '<div class="product-card-placeholder" style="height: 200px;">写真がありません</div>';
+      gallery.innerHTML = '<div class="product-card-placeholder no-photo-clickable" style="height: 200px;" title="クリックして写真を追加">📷 写真がありません</div>';
+      this.setupNoPhotoUpload(gallery.querySelector('.no-photo-clickable'));
       return;
     }
 
@@ -1367,6 +1383,59 @@ const ProductDetail = {
       return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w800';
     }
     return url;
+  },
+
+  // 写真なし状態のクリックアップロード設定
+  setupNoPhotoUpload(el) {
+    if (!el) return;
+    var self = this;
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', function() {
+      var fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/jpeg,image/png,image/webp';
+      fileInput.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        // ファイル形式チェック
+        var allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (allowedTypes.indexOf(file.type) === -1) {
+          Toast.error('対応していないファイル形式です。JPEG、PNG、WebPのみ対応しています。');
+          return;
+        }
+        // サイズチェック (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          Toast.error('ファイルサイズが大きすぎます。5MB以下にしてください。');
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var base64 = ev.target.result.split(',')[1];
+          Loading.show();
+          Api.call('uploadProductPhoto', base64, file.name, file.type)
+            .then(function(result) {
+              if (result && result.url) {
+                return Api.updateProduct(self.productId, { rawPhotoUrls: result.url });
+              } else {
+                throw new Error('アップロード結果が不正です');
+              }
+            })
+            .then(function() {
+              Toast.success('写真をアップロードしました');
+              return self.loadProduct();
+            })
+            .catch(function(err) {
+              console.error('Photo upload error:', err);
+              Toast.error('写真のアップロードに失敗しました: ' + (err.message || err));
+            })
+            .finally(function() {
+              Loading.hide();
+            });
+        };
+        reader.readAsDataURL(file);
+      });
+      fileInput.click();
+    });
   },
 
   renderProcessingCosts() {
