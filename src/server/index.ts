@@ -33,7 +33,7 @@ import {
   CreateMajorCategoryDto,
   CreateMinorCategoryDto,
 } from './types/master';
-import { ConfirmationMethod, PaginationOptions } from './types/common';
+import { ConfirmationMethod, PaginationOptions, MAJOR_CATEGORIES, MINOR_CATEGORIES } from './types/common';
 import { setupAllSheets, setupSheetsOnly, clearAllData } from './setupData';
 
 // ==================== 設定 ====================
@@ -783,10 +783,12 @@ function getUniqueCategoryValues() {
     const majorCategoryRepo = new MajorCategoryRepository(spreadsheetId);
     const minorCategoryRepo = new MinorCategoryRepository(spreadsheetId);
 
+    // デフォルト候補を初期値として設定
+    const majorSet = new Set<string>(MAJOR_CATEGORIES);
+    const minorSet = new Set<string>(MINOR_CATEGORIES);
+
     // 製品データからユニーク値を収集
     const allProducts = productService.searchProducts({}, { page: 1, limit: 10000 });
-    const majorSet = new Set<string>();
-    const minorSet = new Set<string>();
 
     allProducts.data.forEach((p: { majorCategory?: string; minorCategory?: string }) => {
       if (p.majorCategory) majorSet.add(p.majorCategory);
