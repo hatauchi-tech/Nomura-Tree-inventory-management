@@ -248,6 +248,7 @@ function sellProduct(productId: string, salesData: SalesData) {
       ...salesData,
       soldDate: salesData.soldDate ? new Date(salesData.soldDate as any) : salesData.soldDate,
       soldPrice: Number(salesData.soldPrice),
+      deliveryDate: salesData.deliveryDate ? new Date(salesData.deliveryDate as any) : undefined,
     };
     const result = service.sellProduct(productId, convertedData);
     return JSON.parse(JSON.stringify(result));

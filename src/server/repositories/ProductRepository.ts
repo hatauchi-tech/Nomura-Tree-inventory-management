@@ -433,6 +433,7 @@ export class ProductRepository extends BaseRepository<Product> {
       purchasePrice: dto.purchasePrice,
       storageLocationId: dto.storageLocationId,
       shippingCost: dto.shippingCost,
+      shippingCarrier: dto.shippingCarrier,
       profitMargin: dto.profitMargin ?? DEFAULTS.PROFIT_MARGIN,
       priceAdjustment: dto.priceAdjustment,
       status: '販売中',
@@ -454,6 +455,7 @@ export class ProductRepository extends BaseRepository<Product> {
       soldPrice: number;
       soldTo?: string;
       shippingCost?: number;
+      deliveryDate?: Date;
       remarks?: string;
     }
   ): Product | null {
@@ -463,6 +465,7 @@ export class ProductRepository extends BaseRepository<Product> {
       actualSalesPrice: salesData.soldPrice,
       salesDestination: salesData.soldTo,
       shippingCost: salesData.shippingCost ?? undefined,
+      deliveryDate: salesData.deliveryDate ?? undefined,
       salesRemarks: salesData.remarks,
       updatedAt: new Date(),
     } as Partial<Product>);

@@ -154,6 +154,36 @@
     </button>
   </div>
 
+  <!-- 配送情報 -->
+  <div class="detail-section" id="detailShippingSection">
+    <h3 class="detail-section-title">配送情報</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">配送業者</span>
+        <span class="detail-value" id="detailShippingCarrier">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">納品日</span>
+        <span class="detail-value" id="detailDeliveryDate">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 商談情報 -->
+  <div class="detail-section hidden" id="detailNegotiationSection">
+    <h3 class="detail-section-title">商談情報</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">商談担当者</span>
+        <span class="detail-value" id="detailNegotiator">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">担当部署</span>
+        <span class="detail-value" id="detailDepartment">-</span>
+      </div>
+    </div>
+  </div>
+
   <!-- 備考 -->
   <div class="detail-section">
     <h3 class="detail-section-title">備考</h3>
@@ -168,8 +198,11 @@
     <button class="btn btn-secondary" id="btnEdit" onclick="ProductDetail.edit()">
       編集
     </button>
+    <button class="btn btn-warning" id="btnNegotiate" onclick="ProductDetail.negotiate()" style="color: white;">
+      商談開始
+    </button>
     <button class="btn btn-primary" id="btnSell" onclick="ProductDetail.sell()">
-      💰 販売処理
+      販売処理
     </button>
   </div>
 </div>
@@ -251,11 +284,39 @@
           <label class="form-label">販売先</label>
           <input type="text" class="form-input" id="salesDestination" placeholder="顧客名・会社名など（任意）" maxlength="100">
         </div>
+        <div class="form-group">
+          <label class="form-label">納品日</label>
+          <input type="date" class="form-input" id="sellDeliveryDate">
+        </div>
       </form>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="ProductDetail.closeSellModal()">キャンセル</button>
       <button class="btn btn-success" onclick="ProductDetail.submitSale()">販売確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 商談開始モーダル -->
+<div class="modal-overlay hidden" id="negotiateModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">商談開始</h3>
+      <button class="modal-close" onclick="ProductDetail.closeNegotiateModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label form-label-required">担当者名</label>
+        <input type="text" class="form-input" id="negotiatorName" required placeholder="担当者名を入力">
+      </div>
+      <div class="form-group">
+        <label class="form-label">部署名</label>
+        <input type="text" class="form-input" id="negotiatorDepartment" placeholder="部署名を入力（任意）">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="ProductDetail.closeNegotiateModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="ProductDetail.submitNegotiate()">商談開始</button>
     </div>
   </div>
 </div>

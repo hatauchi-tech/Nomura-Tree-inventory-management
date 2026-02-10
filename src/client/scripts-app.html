@@ -700,6 +700,9 @@ const ProductForm = {
       // 備考
       document.getElementById('remarks').value = product.remarks || '';
 
+      // 配送業者
+      document.getElementById('shippingCarrier').value = product.shippingCarrier || '';
+
       // 写真URL
       if (product.rawPhotoUrls) {
         const rawUrl = this.convertDriveUrl(product.rawPhotoUrls);
@@ -1092,6 +1095,7 @@ const ProductForm = {
         return type === 'incTax' ? Math.round(raw / 1.1) : raw;
       })(),
       remarks: document.getElementById('remarks').value.trim() || undefined,
+      shippingCarrier: document.getElementById('shippingCarrier').value.trim() || undefined,
     };
   },
 
@@ -1284,6 +1288,22 @@ const ProductDetail = {
     document.getElementById('detailPriceExTax').textContent = Utils.formatCurrency(calc.sellingPriceExTax || 0);
     document.getElementById('detailPriceIncTax').textContent = Utils.formatCurrency(calc.sellingPriceIncTax || 0);
 
+    // 配送情報
+    document.getElementById('detailShippingCarrier').textContent = p.shippingCarrier || '-';
+    document.getElementById('detailDeliveryDate').textContent = Utils.formatDate(p.deliveryDate);
+
+    // 商談情報
+    const negotiationSection = document.getElementById('detailNegotiationSection');
+    if (negotiationSection) {
+      if (p.status === '商談中' && (p.negotiator || p.department)) {
+        negotiationSection.classList.remove('hidden');
+        document.getElementById('detailNegotiator').textContent = p.negotiator || '-';
+        document.getElementById('detailDepartment').textContent = p.department || '-';
+      } else {
+        negotiationSection.classList.add('hidden');
+      }
+    }
+
     // 備考
     const remarksEl = document.getElementById('detailRemarks');
     if (remarksEl) {
@@ -1299,6 +1319,16 @@ const ProductDetail = {
       } else {
         btnSell.disabled = false;
         btnSell.style.display = '';
+      }
+    }
+
+    // 商談開始ボタンの状態を更新
+    const btnNegotiate = document.getElementById('btnNegotiate');
+    if (btnNegotiate) {
+      if (p.status === '販売中') {
+        btnNegotiate.style.display = '';
+      } else {
+        btnNegotiate.style.display = 'none';
       }
     }
   },
@@ -1563,10 +1593,12 @@ const ProductDetail = {
     }
 
     try {
+      const deliveryDateValue = document.getElementById('sellDeliveryDate').value;
       const salesData = {
         soldPrice: actualSalesPrice,
         soldDate: new Date(salesDate),
         soldTo: salesDestination || null,
+        deliveryDate: deliveryDateValue ? new Date(deliveryDateValue) : undefined,
       };
 
       await Api.sellProduct(this.productId, salesData);
@@ -1674,6 +1706,61 @@ const ProductDetail = {
     } catch (error) {
       console.error('Failed to delete processing cost:', error);
       Toast.error('加工費の削除に失敗しました: ' + (error.message || '不明なエラー'));
+    }
+  },
+
+  // ==================== 商談開始 ====================
+
+  negotiate() {
+    if (!this.product) {
+      Toast.error('製品情報が読み込まれていません');
+      return;
+    }
+
+    if (this.product.status !== '販売中') {
+      Toast.warning('販売中の製品のみ商談開始できます');
+      return;
+    }
+
+    // フォームをリセット
+    document.getElementById('negotiatorName').value = '';
+    document.getElementById('negotiatorDepartment').value = '';
+
+    // モーダルを表示
+    document.getElementById('negotiateModal').classList.remove('hidden');
+  },
+
+  closeNegotiateModal() {
+    document.getElementById('negotiateModal').classList.add('hidden');
+  },
+
+  async submitNegotiate() {
+    const negotiatorName = document.getElementById('negotiatorName').value.trim();
+    const negotiatorDepartment = document.getElementById('negotiatorDepartment').value.trim();
+
+    if (!negotiatorName) {
+      Toast.warning('担当者名を入力してください');
+      return;
+    }
+
+    try {
+      Loading.show();
+      await Api.updateProduct(this.productId, {
+        status: '商談中',
+        negotiator: negotiatorName,
+        department: negotiatorDepartment || undefined,
+      });
+
+      Toast.success('商談を開始しました');
+      this.closeNegotiateModal();
+
+      // 製品情報を再読み込み
+      await this.loadProduct();
+    } catch (error) {
+      console.error('Failed to start negotiation:', error);
+      Toast.error('商談開始に失敗しました: ' + (error.message || '不明なエラー'));
+    } finally {
+      Loading.hide();
     }
   },
 };

@@ -13,6 +13,7 @@ export interface SalesData {
   soldPrice: number;
   soldTo?: string;
   shippingCost?: number;
+  deliveryDate?: Date;
   remarks?: string;
 }
 
@@ -54,7 +55,7 @@ export class SalesService {
       );
     }
 
-    if (product.status !== '販売中') {
+    if (product.status !== '販売中' && product.status !== '商談中') {
       throw new SalesServiceError(
         '販売可能な状態ではありません',
         'NOT_AVAILABLE',

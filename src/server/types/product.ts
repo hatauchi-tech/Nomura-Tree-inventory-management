@@ -17,6 +17,7 @@ import {
  */
 export const PRODUCT_STATUSES = [
   '販売中',
+  '商談中',
   '販売済み',
   '棚卸し中',
   '削除済み',
@@ -82,6 +83,14 @@ export interface Product extends BaseEntity {
 
   // 備考
   remarks?: string; // 備考
+
+  // 配送情報
+  shippingCarrier?: string; // 配送業者
+  deliveryDate?: Date; // 納品日
+
+  // 商談情報
+  negotiator?: string; // 商談担当者
+  department?: string; // 担当部署
 }
 
 /**
@@ -104,6 +113,7 @@ export interface CreateProductDto {
   profitMargin?: number;
   priceAdjustment?: number;
   remarks?: string;
+  shippingCarrier?: string;
 }
 
 /**
@@ -123,6 +133,10 @@ export interface UpdateProductDto {
   profitMargin?: number;
   priceAdjustment?: number;
   remarks?: string;
+  shippingCarrier?: string;
+  status?: ProductStatus;
+  negotiator?: string;
+  department?: string;
 }
 
 /**
@@ -225,6 +239,10 @@ export const PRODUCT_COLUMNS = {
   UPDATED_AT: 30, // AE
   CREATED_BY: 31, // AF
   UPDATED_BY: 32, // AG
+  SHIPPING_CARRIER: 33, // AH
+  DELIVERY_DATE: 34, // AI
+  NEGOTIATOR: 35, // AJ
+  DEPARTMENT: 36, // AK
 } as const;
 
 /**
@@ -264,6 +282,10 @@ export const PRODUCT_HEADERS = [
   '更新日時',
   '登録者',
   '更新者',
+  '配送業者',
+  '納品日',
+  '商談担当者',
+  '担当部署',
 ];
 
 /**
@@ -331,6 +353,10 @@ export function rowToProduct(row: SheetRowData): Product {
       ? String(row[C.DELETE_REASON])
       : undefined,
     remarks: row[C.REMARKS] ? String(row[C.REMARKS]) : undefined,
+    shippingCarrier: row[C.SHIPPING_CARRIER] ? String(row[C.SHIPPING_CARRIER]) : undefined,
+    deliveryDate: parseDate(row[C.DELIVERY_DATE]),
+    negotiator: row[C.NEGOTIATOR] ? String(row[C.NEGOTIATOR]) : undefined,
+    department: row[C.DEPARTMENT] ? String(row[C.DEPARTMENT]) : undefined,
     createdAt: parseDate(row[C.CREATED_AT]) ?? new Date(),
     updatedAt: parseDate(row[C.UPDATED_AT]),
     createdBy: row[C.CREATED_BY] ? String(row[C.CREATED_BY]) : undefined,
@@ -343,7 +369,7 @@ export function rowToProduct(row: SheetRowData): Product {
  */
 export function productToRow(product: Product): SheetRowData {
   const C = PRODUCT_COLUMNS;
-  const row: SheetRowData = new Array(33).fill('');
+  const row: SheetRowData = new Array(37).fill('');
 
   row[C.PRODUCT_ID] = product.productId;
   row[C.MAJOR_CATEGORY] = product.majorCategory;
@@ -378,6 +404,10 @@ export function productToRow(product: Product): SheetRowData {
   row[C.UPDATED_AT] = product.updatedAt ?? '';
   row[C.CREATED_BY] = product.createdBy ?? '';
   row[C.UPDATED_BY] = product.updatedBy ?? '';
+  row[C.SHIPPING_CARRIER] = product.shippingCarrier ?? '';
+  row[C.DELIVERY_DATE] = product.deliveryDate ?? '';
+  row[C.NEGOTIATOR] = product.negotiator ?? '';
+  row[C.DEPARTMENT] = product.department ?? '';
 
   return row;
 }
