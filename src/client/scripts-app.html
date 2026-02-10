@@ -417,6 +417,10 @@ const ProductList = {
   total: 0,
 
   async init() {
+    // 保管場所・樹種セレクトボックスを初期化
+    App.populateSelect('filterStorageLocation', App.masterData.storageLocations, 'storageLocationId', 'name', 'すべての保管場所');
+    App.populateSelect('filterWoodType', App.masterData.woodTypes, 'name', 'name', 'すべての樹種');
+
     this.setupEventListeners();
     await this.loadProducts();
   },
@@ -439,6 +443,24 @@ const ProductList = {
     if (filterCategory) {
       filterCategory.addEventListener('change', function() { ProductList.loadProducts(); });
     }
+
+    const filterStorageLocation = document.getElementById('filterStorageLocation');
+    if (filterStorageLocation) {
+      filterStorageLocation.addEventListener('change', function() { ProductList.loadProducts(); });
+    }
+
+    const filterWoodType = document.getElementById('filterWoodType');
+    if (filterWoodType) {
+      filterWoodType.addEventListener('change', function() { ProductList.loadProducts(); });
+    }
+
+    const sizeInputIds = ['filterMinLength', 'filterMaxLength', 'filterMinWidth', 'filterMaxWidth'];
+    sizeInputIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', Utils.debounce(function() { ProductList.loadProducts(); }, 500));
+      }
+    });
   },
 
   async loadProducts() {
@@ -449,11 +471,29 @@ const ProductList = {
       const keyword = document.getElementById('searchKeyword')?.value || '';
       const status = document.getElementById('filterStatus')?.value || '';
       const category = document.getElementById('filterCategory')?.value || '';
+      const storageLocationId = document.getElementById('filterStorageLocation')?.value || '';
+      const woodType = document.getElementById('filterWoodType')?.value || '';
+      const minLength = document.getElementById('filterMinLength')?.value || '';
+      const maxLength = document.getElementById('filterMaxLength')?.value || '';
+      const minWidth = document.getElementById('filterMinWidth')?.value || '';
+      const maxWidth = document.getElementById('filterMaxWidth')?.value || '';
 
       const conditions = {};
       if (keyword) conditions.keyword = keyword;
       if (status) conditions.statuses = [status];
       if (category) conditions.majorCategories = [category];
+      if (storageLocationId) conditions.storageLocationIds = [storageLocationId];
+      if (woodType) conditions.woodTypes = [woodType];
+      if (minLength || maxLength) {
+        conditions.lengthRange = {};
+        if (minLength) conditions.lengthRange.min = parseInt(minLength);
+        if (maxLength) conditions.lengthRange.max = parseInt(maxLength);
+      }
+      if (minWidth || maxWidth) {
+        conditions.widthRange = {};
+        if (minWidth) conditions.widthRange.min = parseInt(minWidth);
+        if (maxWidth) conditions.widthRange.max = parseInt(maxWidth);
+      }
 
       console.log('loadProducts: conditions=', conditions);
       const result = await Api.getProducts(conditions, { page: this.currentPage, limit: this.limit });
@@ -518,6 +558,12 @@ const ProductList = {
     document.getElementById('searchKeyword').value = '';
     document.getElementById('filterStatus').value = '';
     document.getElementById('filterCategory').value = '';
+    document.getElementById('filterStorageLocation').value = '';
+    document.getElementById('filterWoodType').value = '';
+    document.getElementById('filterMinLength').value = '';
+    document.getElementById('filterMaxLength').value = '';
+    document.getElementById('filterMinWidth').value = '';
+    document.getElementById('filterMaxWidth').value = '';
     this.loadProducts();
   },
 
@@ -555,7 +601,7 @@ const ProductForm = {
     }
 
     // セレクトボックスを初期化
-    App.populateSelect('woodType', App.masterData.woodTypes, 'woodTypeId', 'name');
+    App.populateSelect('woodType', App.masterData.woodTypes, 'name', 'name');
     App.populateSelect('supplierId', App.masterData.suppliers, 'supplierId', 'name');
     App.populateSelect('storageLocationId', App.masterData.storageLocations, 'storageLocationId', 'name');
 
@@ -2246,7 +2292,7 @@ const SalesList = {
 
   async init() {
     // 樹種セレクトボックスを初期化
-    App.populateSelect('salesFilterWoodType', App.masterData.woodTypes, 'woodTypeId', 'name', 'すべて');
+    App.populateSelect('salesFilterWoodType', App.masterData.woodTypes, 'name', 'name', 'すべて');
 
     // デフォルトで今月の販売を表示
     this.setThisMonth();
@@ -2402,7 +2448,7 @@ const SalesList = {
 const Reports = {
   async init() {
     // 樹種セレクトボックスを初期化
-    App.populateSelect('catalogFilterWoodType', App.masterData.woodTypes, 'woodTypeId', 'name', 'すべて');
+    App.populateSelect('catalogFilterWoodType', App.masterData.woodTypes, 'name', 'name', 'すべて');
   },
 
   async exportInventoryCsv() {
