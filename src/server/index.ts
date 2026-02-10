@@ -243,7 +243,13 @@ function getDashboardStats() {
 function sellProduct(productId: string, salesData: SalesData) {
   try {
     const service = new SalesService(getSpreadsheetId());
-    const result = service.sellProduct(productId, salesData);
+    // Convert string dates and prices from client
+    const convertedData: SalesData = {
+      ...salesData,
+      soldDate: salesData.soldDate ? new Date(salesData.soldDate as any) : salesData.soldDate,
+      soldPrice: Number(salesData.soldPrice),
+    };
+    const result = service.sellProduct(productId, convertedData);
     return JSON.parse(JSON.stringify(result));
   } catch (error) {
     console.error('sellProduct error:', error);
