@@ -8,8 +8,6 @@
   <button class="tab" onclick="Master.switchTab('suppliers')">仕入れ先</button>
   <button class="tab" onclick="Master.switchTab('processors')">加工業者</button>
   <button class="tab" onclick="Master.switchTab('storageLocations')">保管場所</button>
-  <button class="tab" onclick="Master.switchTab('majorCategories')">大分類</button>
-  <button class="tab" onclick="Master.switchTab('minorCategories')">中分類</button>
 </div>
 
 <!-- 樹種マスター -->
@@ -128,120 +126,6 @@
         </tr>
       </tbody>
     </table>
-  </div>
-</div>
-
-<!-- 大分類マスター -->
-<div class="content-area tab-content hidden" id="tabMajorCategories">
-  <div class="action-bar">
-    <h3 class="form-section-title" style="margin-bottom: 0;">大分類マスター</h3>
-    <div class="action-bar-right">
-      <button class="btn btn-primary btn-sm" onclick="Master.addMajorCategory()">
-        ➕ 新規登録
-      </button>
-    </div>
-  </div>
-  <div class="table-container">
-    <table class="table" id="majorCategoriesTable">
-      <thead>
-        <tr>
-          <th>カテゴリID</th>
-          <th>カテゴリ名</th>
-          <th>表示順</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="majorCategoriesBody">
-        <tr>
-          <td colspan="4" class="text-muted text-center">データを読み込み中...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- 中分類マスター -->
-<div class="content-area tab-content hidden" id="tabMinorCategories">
-  <div class="action-bar">
-    <h3 class="form-section-title" style="margin-bottom: 0;">中分類マスター</h3>
-    <div class="action-bar-right">
-      <button class="btn btn-primary btn-sm" onclick="Master.addMinorCategory()">
-        ➕ 新規登録
-      </button>
-    </div>
-  </div>
-  <div class="table-container">
-    <table class="table" id="minorCategoriesTable">
-      <thead>
-        <tr>
-          <th>カテゴリID</th>
-          <th>カテゴリ名</th>
-          <th>表示順</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="minorCategoriesBody">
-        <tr>
-          <td colspan="4" class="text-muted text-center">データを読み込み中...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- 大分類追加・編集モーダル -->
-<div class="modal-overlay hidden" id="majorCategoryModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 class="modal-title" id="majorCategoryModalTitle">大分類を追加</h3>
-      <button class="modal-close" onclick="Master.closeMajorCategoryModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="majorCategoryForm">
-        <input type="hidden" id="majorCategoryEditId">
-        <div class="form-group">
-          <label class="form-label form-label-required">カテゴリ名</label>
-          <input type="text" class="form-input" id="majorCategoryName" required maxlength="50" placeholder="例: テーブル">
-        </div>
-        <div class="form-group">
-          <label class="form-label">表示順</label>
-          <input type="number" class="form-input" id="majorCategoryDisplayOrder" min="1" max="999" placeholder="1〜999（空欄可）">
-          <p class="form-hint">数値が小さいほど上に表示されます</p>
-        </div>
-      </form>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="Master.closeMajorCategoryModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="Master.submitMajorCategory()">保存</button>
-    </div>
-  </div>
-</div>
-
-<!-- 中分類追加・編集モーダル -->
-<div class="modal-overlay hidden" id="minorCategoryModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 class="modal-title" id="minorCategoryModalTitle">中分類を追加</h3>
-      <button class="modal-close" onclick="Master.closeMinorCategoryModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <form id="minorCategoryForm">
-        <input type="hidden" id="minorCategoryEditId">
-        <div class="form-group">
-          <label class="form-label form-label-required">カテゴリ名</label>
-          <input type="text" class="form-input" id="minorCategoryName" required maxlength="50" placeholder="例: 家具">
-        </div>
-        <div class="form-group">
-          <label class="form-label">表示順</label>
-          <input type="number" class="form-input" id="minorCategoryDisplayOrder" min="1" max="999" placeholder="1〜999（空欄可）">
-          <p class="form-hint">数値が小さいほど上に表示されます</p>
-        </div>
-      </form>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="Master.closeMinorCategoryModal()">キャンセル</button>
-      <button class="btn btn-primary" onclick="Master.submitMinorCategory()">保存</button>
-    </div>
   </div>
 </div>
 

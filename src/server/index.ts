@@ -188,6 +188,10 @@ function getProductDetail(productId: string) {
  */
 function createProduct(dto: CreateProductDto) {
   try {
+    // クライアントからの日付文字列をDateに変換
+    if (dto.purchaseDate) {
+      dto.purchaseDate = new Date(dto.purchaseDate as any);
+    }
     const service = new ProductService(getSpreadsheetId());
     const result = service.createProduct(dto);
     return JSON.parse(JSON.stringify(result));

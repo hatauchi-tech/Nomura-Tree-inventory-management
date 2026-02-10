@@ -264,39 +264,53 @@
     <div class="card" style="margin-top: var(--spacing-md);">
       <div class="card-body">
         <h4 class="card-title">価格プレビュー</h4>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <span class="detail-label">入荷単価</span>
-            <span class="detail-value" id="previewPurchasePrice">-</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">加工費合計</span>
-            <span class="detail-value" id="previewProcessingCost">-</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">販売時送料</span>
-            <span class="detail-value" id="previewShippingCost">-</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">トータル原価</span>
-            <span class="detail-value font-bold" id="previewTotalCost">-</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">目安販売価格（税抜）</span>
-            <span class="detail-value" id="previewSuggestedPrice">-</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">価格調整額</span>
-            <span class="detail-value" id="previewPriceAdjustment">-</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">販売価格（税抜）</span>
-            <span class="detail-value" id="previewPriceExTax">-</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">販売価格（税込）</span>
-            <span class="detail-value font-bold" style="font-size: var(--text-xl); color: var(--color-primary);" id="previewPriceIncTax">-</span>
-          </div>
+        <div class="table-container">
+          <table class="table" style="margin-bottom: 0;">
+            <thead>
+              <tr>
+                <th></th>
+                <th style="text-align:right;">税抜</th>
+                <th style="text-align:right;">税込</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>入荷単価</td>
+                <td style="text-align:right;" id="previewPurchasePrice">-</td>
+                <td style="text-align:right; color:var(--color-text-muted);">-</td>
+              </tr>
+              <tr>
+                <td>加工費合計</td>
+                <td style="text-align:right;" id="previewProcessingCost">-</td>
+                <td style="text-align:right; color:var(--color-text-muted);">-</td>
+              </tr>
+              <tr>
+                <td>販売時送料</td>
+                <td style="text-align:right;" id="previewShippingCost">-</td>
+                <td style="text-align:right; color:var(--color-text-muted);">-</td>
+              </tr>
+              <tr style="border-top: 2px solid var(--color-border);">
+                <td style="font-weight:600;">トータル原価</td>
+                <td style="text-align:right; font-weight:600;" id="previewTotalCost">-</td>
+                <td style="text-align:right; color:var(--color-text-muted);">-</td>
+              </tr>
+              <tr>
+                <td>目安販売価格</td>
+                <td style="text-align:right;" id="previewSuggestedPrice">-</td>
+                <td style="text-align:right;" id="previewSuggestedPriceInc">-</td>
+              </tr>
+              <tr>
+                <td>価格調整額</td>
+                <td style="text-align:right;" id="previewPriceAdjustment">-</td>
+                <td style="text-align:right;" id="previewPriceAdjustmentInc">-</td>
+              </tr>
+              <tr style="border-top: 2px solid var(--color-primary); background: var(--color-bg-secondary);">
+                <td style="font-weight:700; font-size:var(--text-lg);">販売価格</td>
+                <td style="text-align:right; font-weight:700; font-size:var(--text-lg);" id="previewPriceExTax">-</td>
+                <td style="text-align:right; font-weight:700; font-size:var(--text-xl); color:var(--color-primary);" id="previewPriceIncTax">-</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
