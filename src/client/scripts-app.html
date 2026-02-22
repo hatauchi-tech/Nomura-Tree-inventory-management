@@ -626,9 +626,7 @@ const ProductForm = {
       document.getElementById('priceAdjustment').value = '0';
     }
 
-    // 写真プレビューをリセット
-    this.clearPhotoPreview('rawPhotoPreview');
-    this.clearPhotoPreview('finishedPhotoPreview');
+    // 写真をリセット
     this.setupPhotoPreview();
 
     // フォーム送信イベント
@@ -710,18 +708,18 @@ const ProductForm = {
       // 配送業者
       document.getElementById('shippingCarrier').value = product.shippingCarrier || '';
 
-      // 写真URL
+      // 写真URL（JSON配列 or 単一URL）
       if (product.rawPhotoUrls) {
-        const rawUrl = this.convertDriveUrl(product.rawPhotoUrls);
-        document.getElementById('rawPhotoUrl').value = product.rawPhotoUrls;
-        this.updatePhotoPreview('rawPhotoPreview', rawUrl);
-        document.getElementById('rawPhotoRemoveBtn').classList.remove('hidden');
+        try {
+          this.rawPhotos = product.rawPhotoUrls.startsWith('[') ? JSON.parse(product.rawPhotoUrls) : [product.rawPhotoUrls];
+        } catch(e) { this.rawPhotos = [product.rawPhotoUrls]; }
+        this.renderPhotoThumbnails('raw');
       }
       if (product.finishedPhotoUrls) {
-        const finishedUrl = this.convertDriveUrl(product.finishedPhotoUrls);
-        document.getElementById('finishedPhotoUrl').value = product.finishedPhotoUrls;
-        this.updatePhotoPreview('finishedPhotoPreview', finishedUrl);
-        document.getElementById('finishedPhotoRemoveBtn').classList.remove('hidden');
+        try {
+          this.finishedPhotos = product.finishedPhotoUrls.startsWith('[') ? JSON.parse(product.finishedPhotoUrls) : [product.finishedPhotoUrls];
+        } catch(e) { this.finishedPhotos = [product.finishedPhotoUrls]; }
+        this.renderPhotoThumbnails('finished');
       }
 
       // 加工費を読み込み
@@ -767,66 +765,84 @@ const ProductForm = {
     });
   },
 
+  // 複数写真管理用状態
+  rawPhotos: [],
+  finishedPhotos: [],
+  MAX_PHOTOS: 5,
+
   // 写真プレビュー設定（初期化用）
   setupPhotoPreview() {
-    // 削除ボタンを非表示にリセット
-    const rawRemoveBtn = document.getElementById('rawPhotoRemoveBtn');
-    const finishedRemoveBtn = document.getElementById('finishedPhotoRemoveBtn');
-    if (rawRemoveBtn) rawRemoveBtn.classList.add('hidden');
-    if (finishedRemoveBtn) finishedRemoveBtn.classList.add('hidden');
+    this.rawPhotos = [];
+    this.finishedPhotos = [];
+    this.renderPhotoThumbnails('raw');
+    this.renderPhotoThumbnails('finished');
   },
 
   // Google Drive URLを画像URLに変換
   convertDriveUrl(url) {
     if (!url) return null;
-    // Google Drive共有リンクを直接表示用に変換
-    // 形式1: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-    // 形式2: https://drive.google.com/open?id=FILE_ID
-    const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
+    var fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
     if (fileIdMatch) {
-      const fileId = fileIdMatch[1] || fileIdMatch[2];
+      var fileId = fileIdMatch[1] || fileIdMatch[2];
       return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
     }
-    // 既に直接URLの場合はそのまま返す
     return url;
   },
 
-  // 写真プレビューを更新
-  updatePhotoPreview(containerId, url) {
-    var container = document.getElementById(containerId);
+  // サムネイルグリッドをレンダリング（Utils.escapeHtmlでXSS対策済み）
+  renderPhotoThumbnails(type) {
+    var photos = type === 'raw' ? this.rawPhotos : this.finishedPhotos;
+    var container = document.getElementById(type + 'PhotoThumbnails');
     if (!container) return;
 
-    if (url) {
-      container.innerHTML = '<img src="' + Utils.escapeHtml(url) + '" alt="プレビュー" onerror="ProductForm.handlePhotoError(this, \'' + containerId + '\')">';
+    // DOM操作で安全にサムネイルを生成
+    container.textContent = '';
+    if (photos.length === 0) {
+      var placeholder = document.createElement('div');
+      placeholder.className = 'photo-preview-placeholder';
+      placeholder.style.cssText = 'width:80px;height:80px;font-size:24px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--color-border);border-radius:6px;';
+      placeholder.textContent = '📷';
+      container.appendChild(placeholder);
     } else {
-      this.clearPhotoPreview(containerId);
+      photos.forEach(function(url, index) {
+        var thumbUrl = ProductForm.convertDriveUrl(url);
+        var item = document.createElement('div');
+        item.className = 'photo-thumbnail-item';
+        var img = document.createElement('img');
+        img.src = thumbUrl;
+        img.alt = '写真' + (index + 1);
+        img.onerror = function() { item.textContent = 'エラー'; };
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'photo-thumbnail-remove';
+        btn.textContent = '×';
+        btn.onclick = function() { ProductForm.removePhoto(type, index); };
+        item.appendChild(img);
+        item.appendChild(btn);
+        container.appendChild(item);
+      });
     }
+
+    // 5枚上限でボタンの表示/非表示
+    var addBtn = document.getElementById(type + 'PhotoAddBtn');
+    var cameraBtn = document.getElementById(type + 'PhotoCameraBtn');
+    if (addBtn) addBtn.style.display = photos.length >= this.MAX_PHOTOS ? 'none' : '';
+    if (cameraBtn) cameraBtn.style.display = photos.length >= this.MAX_PHOTOS ? 'none' : '';
   },
 
-  // 写真プレビューをクリア
-  clearPhotoPreview(containerId) {
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = '<div class="photo-preview-placeholder">プレビュー</div>';
-    }
-  },
-
-  // 写真読み込みエラー時の処理
-  handlePhotoError(img, containerId) {
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = '<div class="photo-preview-placeholder">読み込みエラー</div>';
-    }
-  },
-
-  // ファイル選択時の処理（ファイル選択・カメラ撮影共通）
+  // ファイル選択時の処理（複数枚対応）
   async handleFileSelect(type, file) {
     if (!file) return;
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    var photos = type === 'raw' ? this.rawPhotos : this.finishedPhotos;
+    if (photos.length >= this.MAX_PHOTOS) {
+      Toast.warning('写真は最大' + this.MAX_PHOTOS + '枚までです');
+      return;
+    }
 
-    // バリデーション
+    var maxSize = 5 * 1024 * 1024;
+    var allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
     if (!allowedTypes.includes(file.type)) {
       Toast.error('対応していないファイル形式です。JPEG、PNG、WebPのみ対応しています。');
       return;
@@ -837,32 +853,17 @@ const ProductForm = {
       return;
     }
 
-    const previewId = type === 'raw' ? 'rawPhotoPreview' : 'finishedPhotoPreview';
-    const urlInputId = type === 'raw' ? 'rawPhotoUrl' : 'finishedPhotoUrl';
-    const uploadingId = type === 'raw' ? 'rawPhotoUploading' : 'finishedPhotoUploading';
-    const removeBtnId = type === 'raw' ? 'rawPhotoRemoveBtn' : 'finishedPhotoRemoveBtn';
+    var uploadingId = type === 'raw' ? 'rawPhotoUploading' : 'finishedPhotoUploading';
 
     try {
       document.getElementById(uploadingId).classList.remove('hidden');
-
-      // ファイルをBase64に変換
-      const base64Data = await this.fileToBase64(file);
-
-      // サーバーにアップロード
-      const result = await Api.call('uploadProductPhoto', base64Data, file.name, file.type);
+      var base64Data = await this.fileToBase64(file);
+      var result = await Api.call('uploadProductPhoto', base64Data, file.name, file.type);
 
       if (result && result.url) {
-        // URLを保存
-        document.getElementById(urlInputId).value = result.url;
-
-        // プレビューを更新
-        const thumbnailUrl = this.convertDriveUrl(result.url);
-        this.updatePhotoPreview(previewId, thumbnailUrl);
-
-        // 削除ボタンを表示
-        document.getElementById(removeBtnId).classList.remove('hidden');
-
-        Toast.success('写真をアップロードしました');
+        photos.push(result.url);
+        this.renderPhotoThumbnails(type);
+        Toast.success('写真をアップロードしました（' + photos.length + '/' + this.MAX_PHOTOS + '枚）');
       } else {
         Toast.error('アップロードに失敗しました');
       }
@@ -871,7 +872,6 @@ const ProductForm = {
       Toast.error('アップロード中にエラーが発生しました: ' + (error.message || ''));
     } finally {
       document.getElementById(uploadingId).classList.add('hidden');
-      // ファイル入力をクリア
       var fileInput = document.getElementById(type + 'PhotoFile');
       var cameraInput = document.getElementById(type + 'PhotoCamera');
       if (fileInput) fileInput.value = '';
@@ -879,21 +879,11 @@ const ProductForm = {
     }
   },
 
-  // 写真を削除
-  removePhoto(type) {
-    const previewId = type === 'raw' ? 'rawPhotoPreview' : 'finishedPhotoPreview';
-    const urlInputId = type === 'raw' ? 'rawPhotoUrl' : 'finishedPhotoUrl';
-    const removeBtnId = type === 'raw' ? 'rawPhotoRemoveBtn' : 'finishedPhotoRemoveBtn';
-
-    // URLをクリア
-    document.getElementById(urlInputId).value = '';
-
-    // プレビューをクリア
-    this.clearPhotoPreview(previewId);
-
-    // 削除ボタンを非表示
-    document.getElementById(removeBtnId).classList.add('hidden');
-
+  // 写真を削除（インデックス指定）
+  removePhoto(type, index) {
+    var photos = type === 'raw' ? this.rawPhotos : this.finishedPhotos;
+    photos.splice(index, 1);
+    this.renderPhotoThumbnails(type);
     Toast.info('写真を削除しました');
   },
 
@@ -1077,9 +1067,9 @@ const ProductForm = {
       thickness: finishedThickness ? parseInt(finishedThickness) : undefined,
     } : undefined;
 
-    // 写真URL
-    const rawPhotoUrl = document.getElementById('rawPhotoUrl')?.value.trim() || undefined;
-    const finishedPhotoUrl = document.getElementById('finishedPhotoUrl')?.value.trim() || undefined;
+    // 写真URL（JSON配列）
+    var rawPhotoUrls = this.rawPhotos.length > 0 ? JSON.stringify(this.rawPhotos) : undefined;
+    var finishedPhotoUrls = this.finishedPhotos.length > 0 ? JSON.stringify(this.finishedPhotos) : undefined;
 
     // フォームデータを収集
     return {
@@ -1088,8 +1078,8 @@ const ProductForm = {
       woodType: document.getElementById('woodType').value,
       rawSize: rawSize,
       finishedSize: finishedSize,
-      rawPhotoUrls: rawPhotoUrl,
-      finishedPhotoUrls: finishedPhotoUrl,
+      rawPhotoUrls: rawPhotoUrls,
+      finishedPhotoUrls: finishedPhotoUrls,
       supplierId: document.getElementById('supplierId').value,
       purchaseDate: document.getElementById('purchaseDate').value,
       purchasePrice: parseInt(document.getElementById('purchasePrice').value.replace(/,/g, '')) || 0,
@@ -1340,71 +1330,127 @@ const ProductDetail = {
     }
   },
 
-  // 写真ギャラリーを表示
+  // URLをパースしてJSON配列 or 単一URLを配列に変換
+  parsePhotoUrls(urlStr) {
+    if (!urlStr) return [];
+    try {
+      if (urlStr.startsWith('[')) return JSON.parse(urlStr);
+    } catch(e) {}
+    return [urlStr];
+  },
+
+  // カルーセル状態
+  carouselTab: 'raw',
+  carouselIndex: 0,
+
+  // 写真ギャラリーを表示（カルーセル対応）
   renderPhotoGallery() {
     var gallery = document.getElementById('detailGallery');
     if (!gallery) return;
 
     var p = this.product;
-    var rawUrl = p.rawPhotoUrls ? this.convertDriveUrl(p.rawPhotoUrls) : null;
-    var finishedUrl = p.finishedPhotoUrls ? this.convertDriveUrl(p.finishedPhotoUrls) : null;
+    var rawPhotos = this.parsePhotoUrls(p.rawPhotoUrls);
+    var finishedPhotos = this.parsePhotoUrls(p.finishedPhotoUrls);
 
-    if (!rawUrl && !finishedUrl) {
-      gallery.innerHTML = '<div class="product-card-placeholder no-photo-clickable" style="height: 200px;" title="クリックして写真を追加">📷 写真がありません</div>';
-      this.setupNoPhotoUpload(gallery.querySelector('.no-photo-clickable'));
+    if (rawPhotos.length === 0 && finishedPhotos.length === 0) {
+      gallery.textContent = '';
+      var placeholder = document.createElement('div');
+      placeholder.className = 'product-card-placeholder no-photo-clickable';
+      placeholder.style.height = '200px';
+      placeholder.title = 'クリックして写真を追加';
+      placeholder.textContent = '📷 写真がありません';
+      gallery.appendChild(placeholder);
+      this.setupNoPhotoUpload(placeholder);
       return;
     }
 
-    var html = '<div style="display: flex; flex-direction: column; gap: 16px;">';
-
-    // メイン画像
-    var mainUrl = rawUrl || finishedUrl;
-    html += '<div style="text-align: center;">';
-    html += '<img src="' + mainUrl + '" class="product-photo-main" id="mainPhoto" alt="製品写真" onerror="this.style.display=\'none\'">';
-    html += '</div>';
-
-    // サムネイル（両方ある場合）
-    if (rawUrl && finishedUrl) {
-      html += '<div class="product-photos-container">';
-      html += '<div style="text-align: center;">';
-      html += '<img src="' + rawUrl + '" class="product-photo-thumb active" alt="入荷時" onclick="ProductDetail.selectPhoto(0)" onerror="this.style.display=\'none\'">';
-      html += '<p class="text-muted text-sm">入荷時</p>';
-      html += '</div>';
-      html += '<div style="text-align: center;">';
-      html += '<img src="' + finishedUrl + '" class="product-photo-thumb" alt="仕上げ後" onclick="ProductDetail.selectPhoto(1)" onerror="this.style.display=\'none\'">';
-      html += '<p class="text-muted text-sm">仕上げ後</p>';
-      html += '</div>';
-      html += '</div>';
-    } else {
-      html += '<p class="text-muted text-sm" style="text-align: center;">' + (rawUrl ? '入荷時' : '仕上げ後') + '</p>';
-    }
-
-    html += '</div>';
-    gallery.innerHTML = html;
+    this.carouselTab = rawPhotos.length > 0 ? 'raw' : 'finished';
+    this.carouselIndex = 0;
+    this._rawPhotos = rawPhotos;
+    this._finishedPhotos = finishedPhotos;
+    this._buildCarousel(gallery);
   },
 
-  // 写真のURL配列
-  photoUrls: [],
+  _buildCarousel(gallery) {
+    var self = this;
+    var rawPhotos = this._rawPhotos;
+    var finishedPhotos = this._finishedPhotos;
+    var photos = this.carouselTab === 'raw' ? rawPhotos : finishedPhotos;
+    if (this.carouselIndex >= photos.length) this.carouselIndex = 0;
 
-  // 写真選択
-  selectPhoto(index) {
-    var mainPhoto = document.getElementById('mainPhoto');
-    var p = this.product;
-    var rawUrl = p.rawPhotoUrls ? this.convertDriveUrl(p.rawPhotoUrls) : null;
-    var finishedUrl = p.finishedPhotoUrls ? this.convertDriveUrl(p.finishedPhotoUrls) : null;
+    gallery.textContent = '';
 
-    if (mainPhoto) {
-      mainPhoto.src = index === 0 ? rawUrl : finishedUrl;
+    // タブ切替（両方ある場合のみ）
+    if (rawPhotos.length > 0 && finishedPhotos.length > 0) {
+      var tabBar = document.createElement('div');
+      tabBar.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;';
+      var rawTab = document.createElement('button');
+      rawTab.className = 'btn btn-sm ' + (this.carouselTab === 'raw' ? 'btn-primary' : 'btn-secondary');
+      rawTab.textContent = '入荷時（' + rawPhotos.length + '枚）';
+      rawTab.onclick = function() { self.carouselTab = 'raw'; self.carouselIndex = 0; self._buildCarousel(gallery); };
+      var finTab = document.createElement('button');
+      finTab.className = 'btn btn-sm ' + (this.carouselTab === 'finished' ? 'btn-primary' : 'btn-secondary');
+      finTab.textContent = '仕上げ後（' + finishedPhotos.length + '枚）';
+      finTab.onclick = function() { self.carouselTab = 'finished'; self.carouselIndex = 0; self._buildCarousel(gallery); };
+      tabBar.appendChild(rawTab);
+      tabBar.appendChild(finTab);
+      gallery.appendChild(tabBar);
     }
 
-    // アクティブ状態を更新
-    var thumbs = document.querySelectorAll('.product-photo-thumb');
-    for (var i = 0; i < thumbs.length; i++) {
-      if (i === index) {
-        thumbs[i].classList.add('active');
-      } else {
-        thumbs[i].classList.remove('active');
-      }
+    if (photos.length === 0) return;
+
+    // メイン画像 + 左右矢印
+    var mainWrap = document.createElement('div');
+    mainWrap.style.cssText = 'position:relative;text-align:center;';
+
+    var mainImg = document.createElement('img');
+    mainImg.src = this.convertDriveUrl(photos[this.carouselIndex]);
+    mainImg.alt = '製品写真';
+    mainImg.className = 'product-photo-main';
+    mainImg.id = 'mainPhoto';
+    mainImg.onerror = function() { this.style.display = 'none'; };
+    mainWrap.appendChild(mainImg);
+
+    if (photos.length > 1) {
+      var prevBtn = document.createElement('button');
+      prevBtn.textContent = '‹';
+      prevBtn.className = 'btn btn-secondary';
+      prevBtn.style.cssText = 'position:absolute;left:4px;top:50%;transform:translateY(-50%);padding:4px 10px;font-size:20px;opacity:0.8;';
+      prevBtn.onclick = function() { self.carouselIndex = (self.carouselIndex - 1 + photos.length) % photos.length; self._buildCarousel(gallery); };
+      mainWrap.appendChild(prevBtn);
+
+      var nextBtn = document.createElement('button');
+      nextBtn.textContent = '›';
+      nextBtn.className = 'btn btn-secondary';
+      nextBtn.style.cssText = 'position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:4px 10px;font-size:20px;opacity:0.8;';
+      nextBtn.onclick = function() { self.carouselIndex = (self.carouselIndex + 1) % photos.length; self._buildCarousel(gallery); };
+      mainWrap.appendChild(nextBtn);
+    }
+
+    gallery.appendChild(mainWrap);
+
+    // カウンター
+    var counter = document.createElement('p');
+    counter.className = 'text-muted text-sm';
+    counter.style.textAlign = 'center';
+    counter.textContent = (this.carouselIndex + 1) + ' / ' + photos.length + '枚' + (rawPhotos.length > 0 && finishedPhotos.length === 0 ? '（入荷時）' : finishedPhotos.length > 0 && rawPhotos.length === 0 ? '（仕上げ後）' : '');
+    gallery.appendChild(counter);
+
+    // サムネイルストリップ（2枚以上の場合）
+    if (photos.length > 1) {
+      var strip = document.createElement('div');
+      strip.style.cssText = 'display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap;';
+      photos.forEach(function(url, idx) {
+        var thumb = document.createElement('img');
+        thumb.src = self.convertDriveUrl(url);
+        thumb.alt = '写真' + (idx + 1);
+        thumb.className = 'product-photo-thumb' + (idx === self.carouselIndex ? ' active' : '');
+        thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid ' + (idx === self.carouselIndex ? 'var(--color-primary)' : 'transparent') + ';';
+        thumb.onclick = function() { self.carouselIndex = idx; self._buildCarousel(gallery); };
+        thumb.onerror = function() { this.style.display = 'none'; };
+        strip.appendChild(thumb);
+      });
+      gallery.appendChild(strip);
     }
   },
 

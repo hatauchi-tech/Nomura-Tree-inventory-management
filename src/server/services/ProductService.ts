@@ -85,7 +85,9 @@ export class ProductService implements IProductService {
         status: product.status,
         sellingPriceIncTax: prices.sellingPriceIncTax,
         storageLocation: product.storageLocationId,
-        rawPhotoUrl: product.rawPhotoUrls,
+        rawPhotoUrl: product.rawPhotoUrls && product.rawPhotoUrls.startsWith('[')
+          ? (JSON.parse(product.rawPhotoUrls)[0] || undefined)
+          : product.rawPhotoUrls,
         stockDays,
         lastInventoryDate: product.lastInventoryDate,
       };

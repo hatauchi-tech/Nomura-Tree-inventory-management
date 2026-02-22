@@ -46,54 +46,36 @@
 
     <div class="form-row form-row-2">
       <div class="form-group">
-        <label class="form-label">入荷時写真</label>
-        <div id="rawPhotoPreview" class="photo-preview-container">
-          <div class="photo-preview-placeholder">プレビュー</div>
-        </div>
-        <!-- 写真選択ボタン -->
+        <label class="form-label">入荷時写真（最大5枚）</label>
+        <div id="rawPhotoThumbnails" class="photo-thumbnails-grid"></div>
         <div class="photo-upload-buttons">
           <input type="file" id="rawPhotoFile" accept="image/*" style="display:none" onchange="ProductForm.handleFileSelect('raw', this.files[0])">
           <input type="file" id="rawPhotoCamera" accept="image/*" capture="environment" style="display:none" onchange="ProductForm.handleFileSelect('raw', this.files[0])">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('rawPhotoFile').click()">
+          <button type="button" class="btn btn-secondary btn-sm" id="rawPhotoAddBtn" onclick="document.getElementById('rawPhotoFile').click()">
             ファイルを選択
           </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('rawPhotoCamera').click()">
+          <button type="button" class="btn btn-secondary btn-sm" id="rawPhotoCameraBtn" onclick="document.getElementById('rawPhotoCamera').click()">
             カメラ撮影
           </button>
-          <button type="button" class="btn btn-sm btn-danger photo-remove-btn hidden" id="rawPhotoRemoveBtn" onclick="ProductForm.removePhoto('raw')">
-            削除
-          </button>
         </div>
-        <!-- 隠しフィールド（URLを保持） -->
-        <input type="hidden" id="rawPhotoUrl" name="rawPhotoUrl">
-        <!-- 処理中の表示 -->
         <div id="rawPhotoUploading" class="photo-uploading hidden">
           <span class="spinner-small"></span> アップロード中...
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">仕上げ後写真</label>
-        <div id="finishedPhotoPreview" class="photo-preview-container">
-          <div class="photo-preview-placeholder">プレビュー</div>
-        </div>
-        <!-- 写真選択ボタン -->
+        <label class="form-label">仕上げ後写真（最大5枚）</label>
+        <div id="finishedPhotoThumbnails" class="photo-thumbnails-grid"></div>
         <div class="photo-upload-buttons">
           <input type="file" id="finishedPhotoFile" accept="image/*" style="display:none" onchange="ProductForm.handleFileSelect('finished', this.files[0])">
           <input type="file" id="finishedPhotoCamera" accept="image/*" capture="environment" style="display:none" onchange="ProductForm.handleFileSelect('finished', this.files[0])">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('finishedPhotoFile').click()">
+          <button type="button" class="btn btn-secondary btn-sm" id="finishedPhotoAddBtn" onclick="document.getElementById('finishedPhotoFile').click()">
             ファイルを選択
           </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('finishedPhotoCamera').click()">
+          <button type="button" class="btn btn-secondary btn-sm" id="finishedPhotoCameraBtn" onclick="document.getElementById('finishedPhotoCamera').click()">
             カメラ撮影
           </button>
-          <button type="button" class="btn btn-sm btn-danger photo-remove-btn hidden" id="finishedPhotoRemoveBtn" onclick="ProductForm.removePhoto('finished')">
-            削除
-          </button>
         </div>
-        <!-- 隠しフィールド（URLを保持） -->
-        <input type="hidden" id="finishedPhotoUrl" name="finishedPhotoUrl">
-        <!-- 処理中の表示 -->
         <div id="finishedPhotoUploading" class="photo-uploading hidden">
           <span class="spinner-small"></span> アップロード中...
         </div>
@@ -101,8 +83,41 @@
     </div>
 
     <style>
-      .photo-preview-container {
+      .photo-thumbnails-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
         margin-bottom: var(--spacing-md);
+      }
+      .photo-thumbnail-item {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+      }
+      .photo-thumbnail-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .photo-thumbnail-remove {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        border: none;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
       }
       .photo-upload-buttons {
         display: flex;
