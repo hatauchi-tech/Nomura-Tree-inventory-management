@@ -22,6 +22,8 @@ import {
   ProductSearchCondition,
   CreateProductDto,
   UpdateProductDto,
+  PRODUCT_STATUSES,
+  ProductStatus,
 } from './types/product';
 import { CreateProcessingCostDto } from './types/processingCost';
 import {
@@ -223,6 +225,43 @@ function deleteProduct(productId: string, reason: string) {
     return JSON.parse(JSON.stringify(result));
   } catch (error) {
     console.error('deleteProduct error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 製品ステータス変更
+ */
+function updateProductStatus(productId: string, newStatus: string) {
+  try {
+    // バリデーション
+    if (!PRODUCT_STATUSES.includes(newStatus as ProductStatus)) {
+      throw new Error('無効なステータスです: ' + newStatus);
+    }
+    if (newStatus === '削除済み') {
+      throw new Error('削除済みへの変更は削除機能を使用してください');
+    }
+
+    const service = new ProductService(getSpreadsheetId());
+    const current = service.getProductDetail(productId);
+    if (!current) {
+      throw new Error('製品が見つかりません: ' + productId);
+    }
+
+    const updateData: UpdateProductDto = { status: newStatus as ProductStatus };
+
+    // 販売済みから他ステータスへの変更時: 販売データをクリア
+    if (current.status === '販売済み' && newStatus !== '販売済み') {
+      (updateData as any).salesDestination = '';
+      (updateData as any).salesDate = '';
+      (updateData as any).actualSalesPrice = '';
+      (updateData as any).salesRemarks = '';
+    }
+
+    const result = service.updateProduct(productId, updateData);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('updateProductStatus error:', error);
     throw error;
   }
 }
@@ -922,6 +961,7 @@ declare const global: {
   createProduct: typeof createProduct;
   updateProduct: typeof updateProduct;
   deleteProduct: typeof deleteProduct;
+  updateProductStatus: typeof updateProductStatus;
   getDashboardStats: typeof getDashboardStats;
   // 販売API
   sellProduct: typeof sellProduct;
@@ -979,6 +1019,7 @@ global.getProductDetail = getProductDetail;
 global.createProduct = createProduct;
 global.updateProduct = updateProduct;
 global.deleteProduct = deleteProduct;
+global.updateProductStatus = updateProductStatus;
 global.getDashboardStats = getDashboardStats;
 // 販売API
 global.sellProduct = sellProduct;

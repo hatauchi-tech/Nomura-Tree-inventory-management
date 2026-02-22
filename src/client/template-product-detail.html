@@ -3,8 +3,16 @@
     <h2 class="page-title" id="detailProductName">製品詳細</h2>
     <p class="page-subtitle" id="detailProductId"></p>
   </div>
-  <div class="flex gap-sm">
+  <div class="flex gap-sm items-center">
     <span class="badge" id="detailStatus">-</span>
+    <select class="form-select" id="statusChangeSelect" style="width:auto;min-width:120px;font-size:var(--text-sm);">
+      <option value="販売中">販売中</option>
+      <option value="商談中">商談中</option>
+      <option value="販売済み">販売済み</option>
+      <option value="棚卸し中">棚卸し中</option>
+      <option value="紛失">紛失</option>
+    </select>
+    <button class="btn btn-sm btn-secondary" id="statusChangeBtn" onclick="ProductDetail.changeStatus()">変更</button>
   </div>
 </div>
 

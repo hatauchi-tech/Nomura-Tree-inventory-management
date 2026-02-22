@@ -1256,6 +1256,20 @@ const ProductDetail = {
     statusEl.textContent = p.status || '-';
     statusEl.className = `badge ${Utils.getStatusClass(p.status)}`;
 
+    // ステータス変更ドロップダウン
+    var statusSelect = document.getElementById('statusChangeSelect');
+    var statusBtn = document.getElementById('statusChangeBtn');
+    if (statusSelect && statusBtn) {
+      if (p.status === '削除済み') {
+        statusSelect.style.display = 'none';
+        statusBtn.style.display = 'none';
+      } else {
+        statusSelect.style.display = '';
+        statusBtn.style.display = '';
+        statusSelect.value = p.status;
+      }
+    }
+
     // 写真ギャラリー表示
     this.renderPhotoGallery();
 
@@ -1519,6 +1533,45 @@ const ProductDetail = {
       });
       fileInput.click();
     });
+  },
+
+  // ステータス変更
+  async changeStatus() {
+    var select = document.getElementById('statusChangeSelect');
+    if (!select) return;
+    var newStatus = select.value;
+    var currentStatus = this.product.status;
+
+    if (newStatus === currentStatus) {
+      Toast.info('同じステータスです');
+      return;
+    }
+
+    // 販売済みからの変更時は警告
+    if (currentStatus === '販売済み') {
+      if (!confirm('販売済みから「' + newStatus + '」に変更すると、販売データ（販売先、販売日、実売価格、販売備考）がクリアされます。よろしいですか？')) {
+        select.value = currentStatus;
+        return;
+      }
+    } else {
+      if (!confirm('ステータスを「' + newStatus + '」に変更しますか？')) {
+        select.value = currentStatus;
+        return;
+      }
+    }
+
+    try {
+      Loading.show();
+      await Api.call('updateProductStatus', this.productId, newStatus);
+      Toast.success('ステータスを「' + newStatus + '」に変更しました');
+      await this.loadProduct();
+    } catch (error) {
+      console.error('Failed to change status:', error);
+      Toast.error('ステータス変更に失敗しました: ' + (error.message || ''));
+      select.value = currentStatus;
+    } finally {
+      Loading.hide();
+    }
   },
 
   renderProcessingCosts() {
