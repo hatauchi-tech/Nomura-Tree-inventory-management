@@ -3117,8 +3117,15 @@ function setupPhotoFolderId(folderId) {
 }
 /**
  * 製品写真をアップロード
+ * @param base64Data Base64エンコードされた画像データ
+ * @param filename 元のファイル名
+ * @param mimeType MIMEタイプ
+ * @param productId 製品ID（任意：命名規則に使用）
+ * @param productName 商品名（任意：命名規則に使用）
+ * @param photoType 写真タイプ 'raw'|'finished'（任意：命名規則に使用）
+ * @param photoIndex 枝番（任意：命名規則に使用）
  */
-function uploadProductPhoto(base64Data, filename, mimeType) {
+function uploadProductPhoto(base64Data, filename, mimeType, productId, productName, photoType, photoIndex) {
     try {
         console.log('uploadProductPhoto called: filename=' + filename + ', mimeType=' + mimeType);
         // バリデーション
@@ -3140,15 +3147,26 @@ function uploadProductPhoto(base64Data, filename, mimeType) {
         if (fileSize > maxSize) {
             throw new Error('ファイルサイズが5MBを超えています');
         }
-        // ファイル名をユニークにする
-        const timestamp = new Date().getTime();
-        const uniqueFilename = 'product_' + timestamp + '_' + filename;
+        // ファイル名を生成
+        const ext = filename.lastIndexOf('.') >= 0 ? filename.substring(filename.lastIndexOf('.')) : '.jpg';
+        let uniqueFilename;
+        if (productId && productName && photoType) {
+            // 命名規則: 製品ID_商品名_入荷時-枝番.拡張子 or 製品ID_商品名_仕上げ後-枝番.拡張子
+            const typeLabel = photoType === 'raw' ? '入荷時' : '仕上げ後';
+            const idx = photoIndex != null ? photoIndex : 1;
+            uniqueFilename = productId + '_' + productName + '_' + typeLabel + '-' + idx + ext;
+        }
+        else {
+            // フォールバック: タイムスタンプベース
+            const timestamp = new Date().getTime();
+            uniqueFilename = 'product_' + timestamp + '_' + filename;
+        }
         blob.setName(uniqueFilename);
         console.log('Unique filename: ' + uniqueFilename);
-        // マイドライブのルートフォルダに保存（権限問題を回避）
-        console.log('Getting root folder...');
-        const folder = DriveApp.getRootFolder();
-        console.log('Root folder ID: ' + folder.getId());
+        // 指定フォルダに保存
+        const folderId = getPhotoFolderId();
+        console.log('Photo folder ID: ' + folderId);
+        const folder = DriveApp.getFolderById(folderId);
         console.log('Creating file...');
         const file = folder.createFile(blob);
         console.log('File created: ' + file.getId());

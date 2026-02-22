@@ -1069,7 +1069,10 @@ const ProductForm = {
         }
 
         var base64Data = await this.fileToBase64(files[i]);
-        var result = await Api.call('uploadProductPhoto', base64Data, files[i].name, files[i].type);
+        var pid = this.editProductId || '';
+        var pname = (document.getElementById('productName') ? document.getElementById('productName').value : '') || '';
+        var photoIndex = photos.length + 1;
+        var result = await Api.call('uploadProductPhoto', base64Data, files[i].name, files[i].type, pid, pname, type, photoIndex);
 
         if (result && result.url) {
           photos.push(result.url);
@@ -1782,7 +1785,9 @@ const ProductDetail = {
         reader.onload = function(ev) {
           var base64 = ev.target.result.split(',')[1];
           Loading.show();
-          Api.call('uploadProductPhoto', base64, file.name, file.type)
+          var pname = (self.product && self.product.productName) ? self.product.productName : '';
+          var existingPhotos = (self.product && self.product.rawPhotoUrls) ? self.product.rawPhotoUrls.split(',').filter(function(u) { return u.trim(); }).length : 0;
+          Api.call('uploadProductPhoto', base64, file.name, file.type, self.productId, pname, 'raw', existingPhotos + 1)
             .then(function(result) {
               if (result && result.url) {
                 return Api.updateProduct(self.productId, { rawPhotoUrls: result.url });
