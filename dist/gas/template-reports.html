@@ -1,0 +1,47 @@
+<div class="page-header">
+  <h2 class="page-title">レポート</h2>
+</div>
+
+<div class="content-area">
+  <!-- レポートカード一覧 -->
+  <div class="report-grid">
+    <!-- 在庫一覧CSV -->
+    <div class="card report-card">
+      <div class="card-body">
+        <h3 class="card-title">在庫一覧</h3>
+        <p class="text-muted mb-md">現在の在庫状況をCSVファイルでダウンロードします。</p>
+        <button class="btn btn-primary" onclick="Reports.exportInventoryCsv()">CSV出力</button>
+      </div>
+    </div>
+
+    <!-- 販売実績CSV -->
+    <div class="card report-card">
+      <div class="card-body">
+        <h3 class="card-title">販売実績</h3>
+        <p class="text-muted mb-md">販売履歴をCSVファイルでダウンロードします。</p>
+        <button class="btn btn-primary" onclick="Reports.exportSalesCsv()">CSV出力</button>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--spacing-lg);
+    }
+    .report-card {
+      display: flex;
+      flex-direction: column;
+    }
+    .report-card .card-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .report-card .btn {
+      margin-top: auto;
+    }
+  </style>
+</div>

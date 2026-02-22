@@ -1,8 +1,10 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output (dist/gas/ は GAS GitHub アシスタント用に除外しない)
+dist/*
+!dist/gas/
+dist/gas/server/
 
 # Coverage
 coverage/

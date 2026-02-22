@@ -1,0 +1,228 @@
+<script>
+/**
+ * API通信ユーティリティ
+ * google.script.run のラッパー
+ */
+
+const Api = {
+  /**
+   * サーバー関数を呼び出す
+   */
+  call(functionName, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        [functionName](...args);
+    });
+  },
+
+  /**
+   * ローディング付きでサーバー関数を呼び出す
+   */
+  async callWithLoading(functionName, ...args) {
+    Loading.show();
+    try {
+      const result = await this.call(functionName, ...args);
+      return result;
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  // ==================== 製品関連 ====================
+
+  /**
+   * 製品一覧を取得
+   */
+  getProducts(conditions = {}, pagination = { page: 1, limit: 20 }) {
+    return this.call('searchProducts', conditions, pagination);
+  },
+
+  /**
+   * 製品詳細を取得
+   */
+  getProduct(productId) {
+    return this.call('getProductDetail', productId);
+  },
+
+  /**
+   * 製品を登録
+   */
+  createProduct(data) {
+    return this.callWithLoading('createProduct', data);
+  },
+
+  /**
+   * 製品を更新
+   */
+  updateProduct(productId, data) {
+    return this.callWithLoading('updateProduct', productId, data);
+  },
+
+  /**
+   * 製品を削除（論理削除）
+   */
+  deleteProduct(productId, reason) {
+    return this.callWithLoading('deleteProduct', productId, reason);
+  },
+
+  /**
+   * 販売処理
+   */
+  sellProduct(productId, salesData) {
+    return this.callWithLoading('sellProduct', productId, salesData);
+  },
+
+  /**
+   * 販売キャンセル
+   */
+  cancelSale(productId, reason) {
+    return this.callWithLoading('cancelSale', productId, reason);
+  },
+
+  // ==================== 加工費関連 ====================
+
+  /**
+   * 製品の加工費一覧を取得
+   */
+  getProcessingCosts(productId) {
+    return this.call('getProcessingCosts', productId);
+  },
+
+  /**
+   * 加工費を登録
+   */
+  createProcessingCost(data) {
+    return this.callWithLoading('createProcessingCost', data);
+  },
+
+  /**
+   * 加工費を削除
+   */
+  deleteProcessingCost(costId) {
+    return this.callWithLoading('deleteProcessingCost', costId);
+  },
+
+  // ==================== マスター関連 ====================
+
+  /**
+   * 樹種一覧を取得
+   */
+  getWoodTypes() {
+    return this.call('getWoodTypes');
+  },
+
+  /**
+   * 仕入れ先一覧を取得
+   */
+  getSuppliers() {
+    return this.call('getSuppliers');
+  },
+
+  /**
+   * 加工業者一覧を取得
+   */
+  getProcessors() {
+    return this.call('getProcessors');
+  },
+
+  /**
+   * 保管場所一覧を取得
+   */
+  getStorageLocations() {
+    return this.call('getStorageLocations');
+  },
+
+  /**
+   * 大分類一覧を取得
+   */
+  getMajorCategories() {
+    return this.call('getMajorCategories');
+  },
+
+  /**
+  /**
+   * カテゴリのユニーク値を取得（サジェスト用）
+   */
+  getUniqueCategoryValues() {
+    return this.call('getUniqueCategoryValues');
+  },
+
+  /**
+   * マスターデータを追加
+   */
+  addMasterData(type, data) {
+    return this.callWithLoading('addMasterData', type, data);
+  },
+
+  /**
+   * マスターデータを削除
+   */
+  deleteMasterData(type, id) {
+    return this.callWithLoading('deleteMasterData', type, id);
+  },
+
+  // ==================== 棚卸し関連 ====================
+
+  /**
+   * 棚卸しセッションを開始
+   */
+  startInventorySession(storageLocationId) {
+    return this.callWithLoading('startInventorySession', storageLocationId);
+  },
+
+  /**
+   * 棚卸しセッションの進捗を取得
+   */
+  getInventoryProgress(sessionId) {
+    return this.call('getInventoryProgress', sessionId);
+  },
+
+  /**
+   * 製品を確認
+   */
+  confirmProduct(sessionId, productId, method) {
+    return this.call('confirmInventoryProduct', sessionId, productId, method);
+  },
+
+  /**
+   * 棚卸しセッションを完了
+   */
+  completeInventorySession(sessionId) {
+    return this.callWithLoading('completeInventorySession', sessionId);
+  },
+
+  // ==================== 統計・レポート ====================
+
+  /**
+   * ダッシュボード統計を取得
+   */
+  getDashboardStats() {
+    return this.call('getDashboardStats');
+  },
+
+  /**
+   * 在庫レポートを取得
+   */
+  getInventoryReport(conditions) {
+    return this.call('getInventoryReport', conditions);
+  },
+
+  // ==================== ファイル出力 ====================
+
+  /**
+   * 製品PDFを生成
+   */
+  generateProductPdf(productId) {
+    return this.callWithLoading('generateProductPdf', productId);
+  },
+
+  /**
+   * CSVをエクスポート
+   */
+  exportCsv(type, conditions) {
+    return this.callWithLoading('exportCsv', type, conditions);
+  },
+};
+</script>

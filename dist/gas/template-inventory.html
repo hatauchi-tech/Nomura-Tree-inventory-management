@@ -1,0 +1,102 @@
+<div class="page-header">
+  <h2 class="page-title">棚卸し</h2>
+  <p class="page-subtitle">在庫確認作業</p>
+</div>
+
+<!-- 棚卸しセッション選択 -->
+<div class="content-area" id="inventoryStart">
+  <h3 class="form-section-title">棚卸しを開始</h3>
+
+  <div class="form-group">
+    <label class="form-label form-label-required" for="inventoryLocation">保管場所を選択</label>
+    <select class="form-select" id="inventoryLocation">
+      <option value="">選択してください</option>
+      <!-- 保管場所はAPIから動的に読み込み -->
+    </select>
+  </div>
+
+  <button class="btn btn-primary btn-lg btn-block" onclick="Inventory.startSession()">
+    📋 棚卸しを開始
+  </button>
+
+  <!-- 進行中のセッション -->
+  <div class="mt-md" id="ongoingSessions">
+    <h4 class="text-muted mb-md">進行中の棚卸しセッション</h4>
+    <div id="ongoingSessionsList">
+      <p class="text-muted">進行中のセッションはありません。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 棚卸し実施画面 -->
+<div class="content-area hidden" id="inventorySession">
+  <!-- 進捗 -->
+  <div class="card mb-md">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-md">
+        <span class="font-semibold" id="sessionLocation">-</span>
+        <span class="badge badge-warning" id="sessionStatus">進行中</span>
+      </div>
+      <div style="background: var(--color-bg-secondary); border-radius: var(--radius-full); height: 12px; overflow: hidden;">
+        <div id="progressBar" style="background: var(--color-success); height: 100%; width: 0%; transition: width 0.3s;"></div>
+      </div>
+      <div class="flex justify-between mt-sm text-sm">
+        <span>確認済: <strong id="confirmedCount">0</strong></span>
+        <span>未確認: <strong id="unconfirmedCount">0</strong></span>
+        <span>差異: <strong id="discrepancyCount">0</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- QRスキャン -->
+  <div class="card mb-md">
+    <div class="card-body text-center">
+      <button class="btn btn-primary btn-lg" onclick="Inventory.openScanner()">
+        📷 QRコードをスキャン
+      </button>
+      <p class="text-muted mt-md">または製品IDを手入力</p>
+      <div class="flex gap-sm mt-sm" style="max-width: 400px; margin: 0 auto;">
+        <input type="text" class="form-input" id="manualProductId" placeholder="製品ID（例: ITA-0001）">
+        <button class="btn btn-secondary" onclick="Inventory.confirmManual()">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- タブ -->
+  <div class="tabs">
+    <button class="tab active" onclick="Inventory.switchTab('unconfirmed')">未確認</button>
+    <button class="tab" onclick="Inventory.switchTab('confirmed')">確認済み</button>
+    <button class="tab" onclick="Inventory.switchTab('discrepancy')">差異あり</button>
+  </div>
+
+  <!-- 未確認リスト -->
+  <div class="tab-content active" id="tabUnconfirmed">
+    <div id="unconfirmedList">
+      <p class="text-muted text-center p-lg">製品データを読み込み中...</p>
+    </div>
+  </div>
+
+  <!-- 確認済みリスト -->
+  <div class="tab-content" id="tabConfirmed">
+    <div id="confirmedList">
+      <p class="text-muted text-center p-lg">確認済みの製品はありません。</p>
+    </div>
+  </div>
+
+  <!-- 差異ありリスト -->
+  <div class="tab-content" id="tabDiscrepancy">
+    <div id="discrepancyList">
+      <p class="text-muted text-center p-lg">差異のある製品はありません。</p>
+    </div>
+  </div>
+
+  <!-- アクションボタン -->
+  <div class="flex gap-md mt-md" style="justify-content: flex-end;">
+    <button class="btn btn-secondary" onclick="Inventory.pauseSession()">
+      中断
+    </button>
+    <button class="btn btn-success" onclick="Inventory.completeSession()">
+      棚卸し完了
+    </button>
+  </div>
+</div>

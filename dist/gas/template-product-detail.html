@@ -1,0 +1,329 @@
+<div class="page-header flex items-center justify-between">
+  <div>
+    <h2 class="page-title" id="detailProductName">製品詳細</h2>
+    <p class="page-subtitle" id="detailProductId"></p>
+  </div>
+  <div class="flex gap-sm items-center">
+    <span class="badge" id="detailStatus">-</span>
+    <select class="form-select" id="statusChangeSelect" style="width:auto;min-width:120px;font-size:var(--text-sm);">
+      <option value="販売中">販売中</option>
+      <option value="商談中">商談中</option>
+      <option value="販売済み">販売済み</option>
+      <option value="棚卸し中">棚卸し中</option>
+      <option value="紛失">紛失</option>
+    </select>
+    <button class="btn btn-sm btn-secondary" id="statusChangeBtn" onclick="ProductDetail.changeStatus()">変更</button>
+  </div>
+</div>
+
+<div class="content-area">
+  <!-- 写真ギャラリー -->
+  <div class="detail-section">
+    <h3 class="detail-section-title">写真</h3>
+    <div class="image-gallery" id="detailGallery">
+      <div class="product-card-placeholder" style="height: 200px;">📷</div>
+    </div>
+  </div>
+
+  <!-- 基本情報 -->
+  <div class="detail-section">
+    <h3 class="detail-section-title">基本情報</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">大分類</span>
+        <span class="detail-value" id="detailMajorCategory">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">樹種</span>
+        <span class="detail-value" id="detailWoodType">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">保管場所</span>
+        <span class="detail-value" id="detailStorageLocation">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- サイズ情報 -->
+  <div class="detail-section">
+    <h3 class="detail-section-title">サイズ</h3>
+    <div class="detail-grid">
+      <div>
+        <p class="text-muted mb-md">入荷時サイズ</p>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">長さ</span>
+            <span class="detail-value" id="detailRawLength">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">幅</span>
+            <span class="detail-value" id="detailRawWidth">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">厚み</span>
+            <span class="detail-value" id="detailRawThickness">-</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="text-muted mb-md">仕上げ後サイズ</p>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">長さ</span>
+            <span class="detail-value" id="detailFinishedLength">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">幅</span>
+            <span class="detail-value" id="detailFinishedWidth">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">厚み</span>
+            <span class="detail-value" id="detailFinishedThickness">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 仕入れ情報 -->
+  <div class="detail-section">
+    <h3 class="detail-section-title">仕入れ情報</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">仕入れ先</span>
+        <span class="detail-value" id="detailSupplier">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">仕入れ日</span>
+        <span class="detail-value" id="detailPurchaseDate">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">入荷単価</span>
+        <span class="detail-value" id="detailPurchasePrice">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">在庫日数</span>
+        <span class="detail-value" id="detailStockDays">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 価格情報 -->
+  <div class="detail-section">
+    <h3 class="detail-section-title">価格情報</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">加工費合計</span>
+        <span class="detail-value" id="detailProcessingCost">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">販売時送料</span>
+        <span class="detail-value" id="detailShippingCost">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">トータル原価</span>
+        <span class="detail-value" id="detailTotalCost">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">利益率</span>
+        <span class="detail-value" id="detailProfitMargin">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">目安販売価格（税抜）</span>
+        <span class="detail-value" id="detailSuggestedPrice">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">価格調整額</span>
+        <span class="detail-value" id="detailPriceAdjustment">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">販売価格（税抜）</span>
+        <span class="detail-value" id="detailPriceExTax">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">販売価格（税込）</span>
+        <span class="detail-value font-bold" style="font-size: var(--text-xl); color: var(--color-primary);" id="detailPriceIncTax">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 加工費詳細 -->
+  <div class="detail-section">
+    <h3 class="detail-section-title">加工費詳細</h3>
+    <div class="table-container" id="detailProcessingCostsTable">
+      <p class="text-muted p-md">加工費の登録はありません。</p>
+    </div>
+    <button class="btn btn-secondary btn-sm mt-md" onclick="ProductDetail.addProcessingCost()">
+      ➕ 加工費を追加
+    </button>
+  </div>
+
+  <!-- 配送情報 -->
+  <div class="detail-section" id="detailShippingSection">
+    <h3 class="detail-section-title">配送情報</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">配送業者</span>
+        <span class="detail-value" id="detailShippingCarrier">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">納品日</span>
+        <span class="detail-value" id="detailDeliveryDate">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 商談情報 -->
+  <div class="detail-section hidden" id="detailNegotiationSection">
+    <h3 class="detail-section-title">商談情報</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">商談担当者</span>
+        <span class="detail-value" id="detailNegotiator">-</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">担当部署</span>
+        <span class="detail-value" id="detailDepartment">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 備考 -->
+  <div class="detail-section">
+    <h3 class="detail-section-title">備考</h3>
+    <p id="detailRemarks" class="text-muted">-</p>
+  </div>
+
+  <!-- アクションボタン -->
+  <div class="flex gap-md" style="justify-content: flex-end; margin-top: var(--spacing-xl);">
+    <button class="btn btn-secondary" onclick="App.navigateTo('products')">
+      戻る
+    </button>
+    <button class="btn btn-secondary" id="btnEdit" onclick="ProductDetail.edit()">
+      編集
+    </button>
+    <button class="btn btn-secondary" id="btnPdf" onclick="ProductDetail.exportPdf()">
+      PDF出力
+    </button>
+    <button class="btn btn-warning" id="btnNegotiate" onclick="ProductDetail.negotiate()" style="color: white;">
+      商談開始
+    </button>
+    <button class="btn btn-primary" id="btnSell" onclick="ProductDetail.sell()">
+      販売処理
+    </button>
+  </div>
+</div>
+
+<!-- 加工費追加モーダル -->
+<div class="modal-overlay hidden" id="processingCostModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">加工費を追加</h3>
+      <button class="modal-close" onclick="ProductDetail.closeProcessingCostModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="processingCostForm">
+        <div class="form-group">
+          <label class="form-label form-label-required">加工種別</label>
+          <select class="form-select" id="processingType" required>
+            <option value="">選択してください</option>
+            <option value="カンナ">カンナ</option>
+            <option value="乾燥">乾燥</option>
+            <option value="塗装">塗装</option>
+            <option value="脚取り付け">脚取り付け</option>
+            <option value="研磨">研磨</option>
+            <option value="補修">補修</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label form-label-required">加工業者</label>
+          <select class="form-select" id="processorId" required>
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">加工内容</label>
+          <textarea class="form-textarea" id="processingContent" rows="3" placeholder="加工内容の詳細を入力（任意）"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label form-label-required">金額（税抜）</label>
+          <input type="number" class="form-input" id="processingAmount" min="0" max="99999999" required placeholder="0">
+          <p class="form-hint">0〜99,999,999円</p>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="ProductDetail.closeProcessingCostModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="ProductDetail.submitProcessingCost()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 販売処理モーダル -->
+<div class="modal-overlay hidden" id="sellModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">販売処理</h3>
+      <button class="modal-close" onclick="ProductDetail.closeSellModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="sellForm">
+        <div class="form-group">
+          <label class="form-label">製品</label>
+          <p style="font-weight: 600; color: var(--color-primary);" id="sellProductName"></p>
+          <p class="text-muted" id="sellProductId"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">目安販売価格（税込）</label>
+          <p style="font-size: var(--text-xl); font-weight: 700; color: var(--color-primary);" id="sellSuggestedPrice"></p>
+        </div>
+        <div class="form-group">
+          <label class="form-label form-label-required">実売価格（税込）</label>
+          <input type="number" class="form-input" id="actualSalesPrice" min="0" max="99999999" required placeholder="税込価格を入力">
+          <p class="form-hint">0〜99,999,999円</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label form-label-required">販売日</label>
+          <input type="date" class="form-input" id="salesDate" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">販売先</label>
+          <input type="text" class="form-input" id="salesDestination" placeholder="顧客名・会社名など（任意）" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">納品日</label>
+          <input type="date" class="form-input" id="sellDeliveryDate">
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="ProductDetail.closeSellModal()">キャンセル</button>
+      <button class="btn btn-success" onclick="ProductDetail.submitSale()">販売確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 商談開始モーダル -->
+<div class="modal-overlay hidden" id="negotiateModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">商談開始</h3>
+      <button class="modal-close" onclick="ProductDetail.closeNegotiateModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label form-label-required">担当者名</label>
+        <input type="text" class="form-input" id="negotiatorName" required placeholder="担当者名を入力">
+      </div>
+      <div class="form-group">
+        <label class="form-label">部署名</label>
+        <input type="text" class="form-input" id="negotiatorDepartment" placeholder="部署名を入力（任意）">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="ProductDetail.closeNegotiateModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="ProductDetail.submitNegotiate()">商談開始</button>
+    </div>
+  </div>
+</div>
