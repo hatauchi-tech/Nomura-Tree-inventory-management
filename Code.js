@@ -3486,12 +3486,20 @@ function generateCatalogPdf(productIds) {
     `;
         // PDF生成
         const blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf');
-        blob.setName('カタログ_' + new Date().toISOString().slice(0, 10) + '.pdf');
-        // Driveに保存
+        const now = new Date();
+        const ts = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyyMMddHHmmss');
+        blob.setName('製品カタログ_' + ts + '.pdf');
+        // カタログ専用フォルダに保存
         let folder;
         try {
-            const folderId = getPhotoFolderId();
-            folder = DriveApp.getFolderById(folderId);
+            const props = PropertiesService.getScriptProperties();
+            const catalogFolderId = props.getProperty('CATALOG_FOLDER_ID');
+            if (catalogFolderId) {
+                folder = DriveApp.getFolderById(catalogFolderId);
+            }
+            else {
+                folder = DriveApp.getRootFolder();
+            }
         }
         catch {
             folder = DriveApp.getRootFolder();
