@@ -212,10 +212,10 @@ const Api = {
   // ==================== ファイル出力 ====================
 
   /**
-   * PDFカタログを生成
+   * 製品PDFを生成
    */
-  generateCatalogPdf(productIds) {
-    return this.callWithLoading('generateCatalogPdf', productIds);
+  generateProductPdf(productId) {
+    return this.callWithLoading('generateProductPdf', productId);
   },
 
   /**

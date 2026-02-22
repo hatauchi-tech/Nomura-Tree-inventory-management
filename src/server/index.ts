@@ -847,16 +847,139 @@ function getInventoryReport(conditions: ProductSearchCondition = {}) {
 }
 
 /**
- * PDFカタログ生成（スタブ）
+ * 製品PDF出力（個別製品）
+ * 原価情報は含めず、販売価格・写真・サイズなどを出力
  */
-function generateCatalogPdf(productIds: string[]) {
-  // TODO: PDF生成実装
-  // 現時点ではスタブとして、DriveにPDFを作成するロジックを記述予定
-  return {
-    success: false,
-    message: 'PDF生成機能は現在開発中です',
-    productIds,
-  };
+function generateProductPdf(productId: string) {
+  try {
+    const spreadsheetId = getSpreadsheetId();
+    const service = new ProductService(spreadsheetId);
+    const product = service.getProductDetail(productId);
+    if (!product) {
+      throw new Error('製品が見つかりません: ' + productId);
+    }
+
+    // 写真URLを解析
+    const rawPhotos: string[] = product.rawPhotoUrls && product.rawPhotoUrls.startsWith('[')
+      ? JSON.parse(product.rawPhotoUrls) : (product.rawPhotoUrls ? [product.rawPhotoUrls] : []);
+    const finishedPhotos: string[] = product.finishedPhotoUrls && product.finishedPhotoUrls.startsWith('[')
+      ? JSON.parse(product.finishedPhotoUrls) : (product.finishedPhotoUrls ? [product.finishedPhotoUrls] : []);
+
+    // サイズ文字列を作成
+    const rawSize = [product.rawSize?.length, product.rawSize?.width, product.rawSize?.thickness]
+      .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
+    const finishedSize = [product.finishedSize?.length, product.finishedSize?.width, product.finishedSize?.thickness]
+      .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
+
+    // 販売価格（税込）
+    const priceIncTax = product.calculated?.sellingPriceIncTax
+      ? '¥' + Math.round(product.calculated.sellingPriceIncTax).toLocaleString()
+      : '-';
+    const priceExTax = product.calculated?.sellingPriceExTax
+      ? '¥' + Math.round(product.calculated.sellingPriceExTax).toLocaleString()
+      : '-';
+
+    // 写真HTMLを生成（最大3枚、Drive thumbnailを使用）
+    let photoHtml = '';
+    const allPhotos = rawPhotos.concat(finishedPhotos).slice(0, 3);
+    for (const url of allPhotos) {
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match) {
+        photoHtml += '<img src="https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w300" style="max-width:200px;max-height:150px;margin:4px;border-radius:4px;">';
+      }
+    }
+
+    // HTML構築（原価情報は除外）
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Noto Sans JP', sans-serif; margin: 40px; color: #333; }
+          h1 { font-size: 24px; color: #2c5530; border-bottom: 2px solid #2c5530; padding-bottom: 8px; }
+          .product-id { color: #888; font-size: 12px; }
+          .section { margin: 16px 0; }
+          .section-title { font-size: 14px; font-weight: 700; color: #2c5530; margin-bottom: 8px; border-left: 3px solid #2c5530; padding-left: 8px; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 6px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+          td:first-child { color: #666; width: 120px; }
+          .price { font-size: 22px; font-weight: 700; color: #2c5530; }
+          .photos { margin: 12px 0; }
+          .footer { margin-top: 30px; font-size: 10px; color: #aaa; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtmlForPdf(product.productName)}</h1>
+        <p class="product-id">${escapeHtmlForPdf(product.productId)}</p>
+
+        ${photoHtml ? '<div class="photos">' + photoHtml + '</div>' : ''}
+
+        <div class="section">
+          <div class="section-title">基本情報</div>
+          <table>
+            <tr><td>大分類</td><td>${escapeHtmlForPdf(product.majorCategory || '-')}</td></tr>
+            <tr><td>樹種</td><td>${escapeHtmlForPdf(product.woodType || '-')}</td></tr>
+            <tr><td>保管場所</td><td>${escapeHtmlForPdf(product.storageLocationId || '-')}</td></tr>
+            <tr><td>ステータス</td><td>${escapeHtmlForPdf(product.status || '-')}</td></tr>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">サイズ</div>
+          <table>
+            <tr><td>入荷時</td><td>${escapeHtmlForPdf(rawSize)}</td></tr>
+            <tr><td>仕上げ後</td><td>${escapeHtmlForPdf(finishedSize)}</td></tr>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">価格</div>
+          <table>
+            <tr><td>販売価格（税抜）</td><td>${escapeHtmlForPdf(priceExTax)}</td></tr>
+            <tr><td>販売価格（税込）</td><td class="price">${escapeHtmlForPdf(priceIncTax)}</td></tr>
+          </table>
+        </div>
+
+        ${product.remarks ? '<div class="section"><div class="section-title">備考</div><p style="font-size:13px;">' + escapeHtmlForPdf(product.remarks) + '</p></div>' : ''}
+
+        <div class="footer">野村木材 在庫管理システム - ${new Date().toLocaleDateString('ja-JP')}</div>
+      </body>
+      </html>
+    `;
+
+    // PDF生成
+    const blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf');
+    blob.setName(product.productName + '_' + product.productId + '.pdf');
+
+    // Driveに保存
+    let folder: GoogleAppsScript.Drive.Folder;
+    try {
+      const folderId = getPhotoFolderId();
+      folder = DriveApp.getFolderById(folderId);
+    } catch {
+      folder = DriveApp.getRootFolder();
+    }
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    return {
+      success: true,
+      url: file.getUrl(),
+      fileName: file.getName(),
+    };
+  } catch (error) {
+    console.error('generateProductPdf error:', error);
+    throw error;
+  }
+}
+
+/**
+ * PDF用HTMLエスケープ
+ */
+function escapeHtmlForPdf(str: string): string {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /**
@@ -994,7 +1117,7 @@ declare const global: {
   uploadProductPhoto: typeof uploadProductPhoto;
   // レポートAPI
   getInventoryReport: typeof getInventoryReport;
-  generateCatalogPdf: typeof generateCatalogPdf;
+  generateProductPdf: typeof generateProductPdf;
   exportCsv: typeof exportCsv;
   // データセットアップ
   setupAllSheets: typeof setupAllSheets;
@@ -1052,7 +1175,7 @@ global.setupPhotoFolderId = setupPhotoFolderId;
 global.uploadProductPhoto = uploadProductPhoto;
 // レポートAPI
 global.getInventoryReport = getInventoryReport;
-global.generateCatalogPdf = generateCatalogPdf;
+global.generateProductPdf = generateProductPdf;
 global.exportCsv = exportCsv;
 // データセットアップ
 global.setupAllSheets = setupAllSheets;

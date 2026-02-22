@@ -1624,6 +1624,25 @@ const ProductDetail = {
     }
   },
 
+  async exportPdf() {
+    if (!this.product) return;
+    try {
+      Loading.show();
+      var result = await Api.generateProductPdf(this.product.productId);
+      if (result && result.success && result.url) {
+        window.open(result.url, '_blank');
+        Toast.success('PDFを生成しました');
+      } else {
+        Toast.error('PDF生成に失敗しました');
+      }
+    } catch (error) {
+      console.error('Export PDF error:', error);
+      Toast.error('PDF生成に失敗しました: ' + (error.message || ''));
+    } finally {
+      Loading.hide();
+    }
+  },
+
   renderProcessingCosts() {
     const container = document.getElementById('detailProcessingCostsTable');
     if (!container) return;
@@ -2887,27 +2906,6 @@ const Reports = {
     }
   },
 
-  async generateCatalogPdf() {
-    const filterWoodType = document.getElementById('catalogFilterWoodType')?.value;
-    const filterStatus = document.getElementById('catalogFilterStatus')?.value || '販売中';
-
-    try {
-      Loading.show();
-      const result = await Api.call('generateCatalogPdf', { woodType: filterWoodType, status: filterStatus });
-
-      if (result.success && result.url) {
-        window.open(result.url, '_blank');
-        Toast.success('PDFを生成しました');
-      } else {
-        Toast.warning(result.message || 'PDF生成機能は現在開発中です');
-      }
-    } catch (error) {
-      console.error('Generate PDF error:', error);
-      Toast.error('PDF生成に失敗しました');
-    } finally {
-      Loading.hide();
-    }
-  },
 
   downloadCsv(csvData, filename) {
     const bom = '\uFEFF';
