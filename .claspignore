@@ -1,5 +1,0 @@
-# Ignore declaration files and server directory
-server/**
-**/*.d.ts
-**/*.d.ts.map
-**/*.map
