@@ -8,6 +8,8 @@
   <button class="tab" onclick="Master.switchTab('suppliers')">仕入れ先</button>
   <button class="tab" onclick="Master.switchTab('processors')">加工業者</button>
   <button class="tab" onclick="Master.switchTab('storageLocations')">保管場所</button>
+  <button class="tab" onclick="Master.switchTab('majorCategories')">大分類</button>
+  <button class="tab" onclick="Master.switchTab('requiredFields')">必須項目設定</button>
 </div>
 
 <!-- 樹種マスター -->
@@ -126,6 +128,102 @@
         </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- 大分類マスター -->
+<div class="content-area tab-content hidden" id="tabMajorCategories">
+  <div class="action-bar">
+    <h3 class="form-section-title" style="margin-bottom: 0;">大分類マスター</h3>
+    <div class="action-bar-right">
+      <button class="btn btn-primary btn-sm" onclick="Master.addMajorCategory()">
+        ➕ 新規登録
+      </button>
+    </div>
+  </div>
+  <div class="table-container">
+    <table class="table" id="majorCategoriesTable">
+      <thead>
+        <tr>
+          <th>カテゴリID</th>
+          <th>カテゴリ名</th>
+          <th>表示順</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="majorCategoriesBody">
+        <tr>
+          <td colspan="4" class="text-muted text-center">データを読み込み中...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 必須項目設定 -->
+<div class="content-area tab-content hidden" id="tabRequiredFields">
+  <div class="action-bar">
+    <h3 class="form-section-title" style="margin-bottom: 0;">必須項目設定</h3>
+    <div class="action-bar-right">
+      <button class="btn btn-primary btn-sm" onclick="Master.saveRequiredFields()">保存</button>
+    </div>
+  </div>
+  <p class="text-muted mb-md">製品登録時に入力必須とする項目を設定します。チェックを入れた項目は必須になります。</p>
+  <div id="requiredFieldsList" class="required-fields-list">
+    <!-- JSで動的に生成 -->
+  </div>
+  <style>
+    .required-fields-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+    .required-field-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--color-bg-secondary);
+      border-radius: 6px;
+    }
+    .required-field-item label {
+      flex: 1;
+      cursor: pointer;
+      font-size: var(--text-base);
+    }
+    .required-field-toggle {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+  </style>
+</div>
+
+<!-- 大分類追加・編集モーダル -->
+<div class="modal-overlay hidden" id="majorCategoryModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="majorCategoryModalTitle">大分類を追加</h3>
+      <button class="modal-close" onclick="Master.closeMajorCategoryModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="majorCategoryForm">
+        <input type="hidden" id="majorCategoryEditId">
+        <div class="form-group">
+          <label class="form-label form-label-required">カテゴリ名</label>
+          <input type="text" class="form-input" id="majorCategoryName" required maxlength="50" placeholder="例: テーブル">
+        </div>
+        <div class="form-group">
+          <label class="form-label">表示順</label>
+          <input type="number" class="form-input" id="majorCategoryDisplayOrder" min="1" max="999" placeholder="1〜999（空欄可）">
+          <p class="form-hint">数値が小さいほど上に表示されます</p>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Master.closeMajorCategoryModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="Master.submitMajorCategory()">保存</button>
+    </div>
   </div>
 </div>
 

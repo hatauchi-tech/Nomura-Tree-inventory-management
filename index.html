@@ -28,45 +28,48 @@
 
     <!-- サイドバー（PC用） -->
     <nav class="sidebar" id="sidebar">
+      <button class="sidebar-collapse-toggle" id="sidebarCollapseBtn" onclick="App.toggleSidebarCollapse()" title="サイドバーを折りたたむ">
+        <span class="collapse-icon">◀</span>
+      </button>
       <ul class="nav-menu">
         <li class="nav-item">
-          <a href="#" class="nav-link active" data-page="dashboard">
+          <a href="#" class="nav-link active" data-page="dashboard" data-tooltip="ダッシュボード">
             <span class="nav-icon">📊</span>
             <span class="nav-text">ダッシュボード</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" data-page="products">
+          <a href="#" class="nav-link" data-page="products" data-tooltip="製品一覧">
             <span class="nav-icon">📦</span>
             <span class="nav-text">製品一覧</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" data-page="product-new">
+          <a href="#" class="nav-link" data-page="product-new" data-tooltip="製品登録">
             <span class="nav-icon">➕</span>
             <span class="nav-text">製品登録</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" data-page="inventory">
+          <a href="#" class="nav-link" data-page="inventory" data-tooltip="棚卸し">
             <span class="nav-icon">📋</span>
             <span class="nav-text">棚卸し</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" data-page="sales">
+          <a href="#" class="nav-link" data-page="sales" data-tooltip="販売済み">
             <span class="nav-icon">💰</span>
             <span class="nav-text">販売済み</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" data-page="masters">
+          <a href="#" class="nav-link" data-page="masters" data-tooltip="マスター管理">
             <span class="nav-icon">⚙️</span>
             <span class="nav-text">マスター管理</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link" data-page="reports">
+          <a href="#" class="nav-link" data-page="reports" data-tooltip="レポート">
             <span class="nav-icon">📈</span>
             <span class="nav-text">レポート</span>
           </a>

@@ -28,6 +28,8 @@ function updateProduct() {
 }
 function deleteProduct() {
 }
+function updateProductStatus() {
+}
 function getDashboardStats() {
 }
 // 販売API
@@ -57,13 +59,16 @@ function getStorageLocations() {
 }
 function getMajorCategories() {
 }
-function getMinorCategories() {
-}
 function addMasterData() {
 }
 function deleteMasterData() {
 }
 function getUniqueCategoryValues() {
+}
+// 必須項目設定API
+function getRequiredFields() {
+}
+function setRequiredFields() {
 }
 // 棚卸しAPI
 function startInventorySession() {
@@ -86,6 +91,8 @@ function uploadProductPhoto() {
 }
 // レポートAPI
 function getInventoryReport() {
+}
+function generateProductPdf() {
 }
 function generateCatalogPdf() {
 }
@@ -1140,7 +1147,9 @@ class ProductService {
                 status: product.status,
                 sellingPriceIncTax: prices.sellingPriceIncTax,
                 storageLocation: product.storageLocationId,
-                rawPhotoUrl: product.rawPhotoUrls,
+                rawPhotoUrl: product.rawPhotoUrls && product.rawPhotoUrls.startsWith('[')
+                    ? (JSON.parse(product.rawPhotoUrls)[0] || undefined)
+                    : product.rawPhotoUrls,
                 stockDays,
                 lastInventoryDate: product.lastInventoryDate,
             };
@@ -1420,11 +1429,6 @@ class ProductRepository extends BaseRepository_1.BaseRepository {
             const categorySet = new Set(conditions.majorCategories);
             results = results.filter((p) => categorySet.has(p.majorCategory));
         }
-        // 中分類フィルター
-        if (conditions.minorCategories && conditions.minorCategories.length > 0) {
-            const categorySet = new Set(conditions.minorCategories);
-            results = results.filter((p) => p.minorCategory && categorySet.has(p.minorCategory));
-        }
         // 樹種フィルター
         if (conditions.woodTypes && conditions.woodTypes.length > 0) {
             const woodTypeSet = new Set(conditions.woodTypes);
@@ -1489,6 +1493,22 @@ class ProductRepository extends BaseRepository_1.BaseRepository {
                 if (min !== undefined && width < min)
                     return false;
                 if (max !== undefined && width > max)
+                    return false;
+                return true;
+            });
+        }
+        // サイズ範囲（厚み）
+        if (conditions.thicknessRange) {
+            const { min, max } = conditions.thicknessRange;
+            const useFinished = conditions.useFinishedSize;
+            results = results.filter((p) => {
+                const size = useFinished ? p.finishedSize : p.rawSize;
+                const thickness = size === null || size === void 0 ? void 0 : size.thickness;
+                if (thickness === undefined)
+                    return false;
+                if (min !== undefined && thickness < min)
+                    return false;
+                if (max !== undefined && thickness > max)
                     return false;
                 return true;
             });
@@ -1660,7 +1680,6 @@ class ProductRepository extends BaseRepository_1.BaseRepository {
         const product = {
             productId,
             majorCategory: dto.majorCategory,
-            minorCategory: dto.minorCategory,
             productName: dto.productName,
             woodType: dto.woodType,
             rawSize: dto.rawSize,
@@ -2103,7 +2122,6 @@ function daysAgo(days) {
 function generateProducts() {
     const products = [];
     const categories = ['テーブル', 'カウンター', 'スツール', '足', 'その他'];
-    const minorCategories = ['家具', '雑貨', '加工材料', 'その他'];
     const statuses = ['販売中', '販売中', '販売中', '販売済み', '棚卸し中', '削除済み'];
     const woodTypeIds = WOOD_TYPES_DATA.map(w => w[0]);
     const supplierIds = SUPPLIERS_DATA.map(s => s[0]);
@@ -2150,7 +2168,7 @@ function generateProducts() {
         const row = [
             productId,
             randomChoice(categories),
-            randomChoice(minorCategories),
+            '',
             `${randomChoice(['銘木', '天然', '無垢'])} ${randomChoice(['ダイニング', 'センター', 'ワーク', 'カウンター'])}テーブル ${i}号`,
             randomChoice(woodTypeIds),
             rawLength,
@@ -2465,6 +2483,7 @@ const ProcessingCostService_1 = __webpack_require__(927);
 const InventoryService_1 = __webpack_require__(255);
 const SalesService_1 = __webpack_require__(871);
 const MasterRepository_1 = __webpack_require__(570);
+const product_1 = __webpack_require__(780);
 const common_1 = __webpack_require__(798);
 const setupData_1 = __webpack_require__(552);
 // ==================== 設定 ====================
@@ -2637,6 +2656,39 @@ function deleteProduct(productId, reason) {
     }
     catch (error) {
         console.error('deleteProduct error:', error);
+        throw error;
+    }
+}
+/**
+ * 製品ステータス変更
+ */
+function updateProductStatus(productId, newStatus) {
+    try {
+        // バリデーション
+        if (!product_1.PRODUCT_STATUSES.includes(newStatus)) {
+            throw new Error('無効なステータスです: ' + newStatus);
+        }
+        if (newStatus === '削除済み') {
+            throw new Error('削除済みへの変更は削除機能を使用してください');
+        }
+        const service = new ProductService_1.ProductService(getSpreadsheetId());
+        const current = service.getProductDetail(productId);
+        if (!current) {
+            throw new Error('製品が見つかりません: ' + productId);
+        }
+        const updateData = { status: newStatus };
+        // 販売済みから他ステータスへの変更時: 販売データをクリア
+        if (current.status === '販売済み' && newStatus !== '販売済み') {
+            updateData.salesDestination = '';
+            updateData.salesDate = '';
+            updateData.actualSalesPrice = '';
+            updateData.salesRemarks = '';
+        }
+        const result = service.updateProduct(productId, updateData);
+        return JSON.parse(JSON.stringify(result));
+    }
+    catch (error) {
+        console.error('updateProductStatus error:', error);
         throw error;
     }
 }
@@ -2862,20 +2914,6 @@ function getMajorCategories() {
     }
 }
 /**
- * 中分類一覧取得
- */
-function getMinorCategories() {
-    try {
-        const repo = new MasterRepository_1.MinorCategoryRepository(getSpreadsheetId());
-        const result = repo.findAllSorted();
-        return JSON.parse(JSON.stringify(result));
-    }
-    catch (error) {
-        console.error('getMinorCategories error:', error);
-        throw error;
-    }
-}
-/**
  * マスターデータ追加
  */
 function addMasterData(type, data) {
@@ -2905,11 +2943,6 @@ function addMasterData(type, data) {
             }
             case 'majorCategory': {
                 const repo = new MasterRepository_1.MajorCategoryRepository(spreadsheetId);
-                result = repo.createFromDto(data);
-                break;
-            }
-            case 'minorCategory': {
-                const repo = new MasterRepository_1.MinorCategoryRepository(spreadsheetId);
                 result = repo.createFromDto(data);
                 break;
             }
@@ -2948,10 +2981,6 @@ function deleteMasterData(type, id) {
             }
             case 'majorCategory': {
                 const repo = new MasterRepository_1.MajorCategoryRepository(spreadsheetId);
-                return repo.delete(id);
-            }
-            case 'minorCategory': {
-                const repo = new MasterRepository_1.MinorCategoryRepository(spreadsheetId);
                 return repo.delete(id);
             }
             default:
@@ -3153,30 +3182,59 @@ function getUniqueCategoryValues() {
         const spreadsheetId = getSpreadsheetId();
         const productService = new ProductService_1.ProductService(spreadsheetId);
         const majorCategoryRepo = new MasterRepository_1.MajorCategoryRepository(spreadsheetId);
-        const minorCategoryRepo = new MasterRepository_1.MinorCategoryRepository(spreadsheetId);
         // デフォルト候補を初期値として設定
         const majorSet = new Set(common_1.MAJOR_CATEGORIES);
-        const minorSet = new Set(common_1.MINOR_CATEGORIES);
         // 製品データからユニーク値を収集
         const allProducts = productService.searchProducts({}, { page: 1, limit: 10000 });
         allProducts.data.forEach((p) => {
             if (p.majorCategory)
                 majorSet.add(p.majorCategory);
-            if (p.minorCategory)
-                minorSet.add(p.minorCategory);
         });
         // マスターデータからも追加
         const majorMasters = majorCategoryRepo.findAllSorted();
         majorMasters.forEach((m) => majorSet.add(m.name));
-        const minorMasters = minorCategoryRepo.findAllSorted();
-        minorMasters.forEach((m) => minorSet.add(m.name));
         return {
             majorCategories: Array.from(majorSet).sort(),
-            minorCategories: Array.from(minorSet).sort(),
         };
     }
     catch (error) {
         console.error('getUniqueCategoryValues error:', error);
+        throw error;
+    }
+}
+// ==================== 必須項目設定API ====================
+const DEFAULT_REQUIRED_FIELDS = [
+    'majorCategory', 'productName', 'woodType', 'storageLocationId',
+    'supplierId', 'purchaseDate', 'purchasePrice',
+];
+/**
+ * 必須項目設定を取得
+ */
+function getRequiredFields() {
+    try {
+        const props = PropertiesService.getScriptProperties();
+        const stored = props.getProperty('REQUIRED_FIELDS');
+        if (stored) {
+            return JSON.parse(stored);
+        }
+        return DEFAULT_REQUIRED_FIELDS;
+    }
+    catch (error) {
+        console.error('getRequiredFields error:', error);
+        return DEFAULT_REQUIRED_FIELDS;
+    }
+}
+/**
+ * 必須項目設定を保存
+ */
+function setRequiredFields(fields) {
+    try {
+        const props = PropertiesService.getScriptProperties();
+        props.setProperty('REQUIRED_FIELDS', JSON.stringify(fields));
+        return { success: true };
+    }
+    catch (error) {
+        console.error('setRequiredFields error:', error);
         throw error;
     }
 }
@@ -3202,16 +3260,245 @@ function getInventoryReport(conditions = {}) {
     }
 }
 /**
- * PDFカタログ生成（スタブ）
+ * 製品PDF出力（個別製品）
+ * 原価情報は含めず、販売価格・写真・サイズなどを出力
+ */
+function generateProductPdf(productId) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    try {
+        const spreadsheetId = getSpreadsheetId();
+        const service = new ProductService_1.ProductService(spreadsheetId);
+        const product = service.getProductDetail(productId);
+        if (!product) {
+            throw new Error('製品が見つかりません: ' + productId);
+        }
+        // 写真URLを解析
+        const rawPhotos = product.rawPhotoUrls && product.rawPhotoUrls.startsWith('[')
+            ? JSON.parse(product.rawPhotoUrls) : (product.rawPhotoUrls ? [product.rawPhotoUrls] : []);
+        const finishedPhotos = product.finishedPhotoUrls && product.finishedPhotoUrls.startsWith('[')
+            ? JSON.parse(product.finishedPhotoUrls) : (product.finishedPhotoUrls ? [product.finishedPhotoUrls] : []);
+        // サイズ文字列を作成
+        const rawSize = [(_a = product.rawSize) === null || _a === void 0 ? void 0 : _a.length, (_b = product.rawSize) === null || _b === void 0 ? void 0 : _b.width, (_c = product.rawSize) === null || _c === void 0 ? void 0 : _c.thickness]
+            .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
+        const finishedSize = [(_d = product.finishedSize) === null || _d === void 0 ? void 0 : _d.length, (_e = product.finishedSize) === null || _e === void 0 ? void 0 : _e.width, (_f = product.finishedSize) === null || _f === void 0 ? void 0 : _f.thickness]
+            .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
+        // 販売価格（税込）
+        const priceIncTax = ((_g = product.calculated) === null || _g === void 0 ? void 0 : _g.sellingPriceIncTax)
+            ? '¥' + Math.round(product.calculated.sellingPriceIncTax).toLocaleString()
+            : '-';
+        const priceExTax = ((_h = product.calculated) === null || _h === void 0 ? void 0 : _h.sellingPriceExTax)
+            ? '¥' + Math.round(product.calculated.sellingPriceExTax).toLocaleString()
+            : '-';
+        // 写真HTMLを生成（最大3枚、Drive thumbnailを使用）
+        let photoHtml = '';
+        const allPhotos = rawPhotos.concat(finishedPhotos).slice(0, 3);
+        for (const url of allPhotos) {
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match) {
+                photoHtml += '<img src="https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w300" style="max-width:200px;max-height:150px;margin:4px;border-radius:4px;">';
+            }
+        }
+        // HTML構築（原価情報は除外）
+        const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Noto Sans JP', sans-serif; margin: 40px; color: #333; }
+          h1 { font-size: 24px; color: #2c5530; border-bottom: 2px solid #2c5530; padding-bottom: 8px; }
+          .product-id { color: #888; font-size: 12px; }
+          .section { margin: 16px 0; }
+          .section-title { font-size: 14px; font-weight: 700; color: #2c5530; margin-bottom: 8px; border-left: 3px solid #2c5530; padding-left: 8px; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 6px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+          td:first-child { color: #666; width: 120px; }
+          .price { font-size: 22px; font-weight: 700; color: #2c5530; }
+          .photos { margin: 12px 0; }
+          .footer { margin-top: 30px; font-size: 10px; color: #aaa; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtmlForPdf(product.productName)}</h1>
+        <p class="product-id">${escapeHtmlForPdf(product.productId)}</p>
+
+        ${photoHtml ? '<div class="photos">' + photoHtml + '</div>' : ''}
+
+        <div class="section">
+          <div class="section-title">基本情報</div>
+          <table>
+            <tr><td>大分類</td><td>${escapeHtmlForPdf(product.majorCategory || '-')}</td></tr>
+            <tr><td>樹種</td><td>${escapeHtmlForPdf(product.woodType || '-')}</td></tr>
+            <tr><td>保管場所</td><td>${escapeHtmlForPdf(product.storageLocationId || '-')}</td></tr>
+            <tr><td>ステータス</td><td>${escapeHtmlForPdf(product.status || '-')}</td></tr>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">サイズ</div>
+          <table>
+            <tr><td>入荷時</td><td>${escapeHtmlForPdf(rawSize)}</td></tr>
+            <tr><td>仕上げ後</td><td>${escapeHtmlForPdf(finishedSize)}</td></tr>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">価格</div>
+          <table>
+            <tr><td>販売価格（税抜）</td><td>${escapeHtmlForPdf(priceExTax)}</td></tr>
+            <tr><td>販売価格（税込）</td><td class="price">${escapeHtmlForPdf(priceIncTax)}</td></tr>
+          </table>
+        </div>
+
+        ${product.remarks ? '<div class="section"><div class="section-title">備考</div><p style="font-size:13px;">' + escapeHtmlForPdf(product.remarks) + '</p></div>' : ''}
+
+        <div class="footer">野村木材 在庫管理システム - ${new Date().toLocaleDateString('ja-JP')}</div>
+      </body>
+      </html>
+    `;
+        // PDF生成
+        const blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf');
+        blob.setName(product.productName + '_' + product.productId + '.pdf');
+        // Driveに保存
+        let folder;
+        try {
+            const folderId = getPhotoFolderId();
+            folder = DriveApp.getFolderById(folderId);
+        }
+        catch {
+            folder = DriveApp.getRootFolder();
+        }
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        return {
+            success: true,
+            url: file.getUrl(),
+            fileName: file.getName(),
+        };
+    }
+    catch (error) {
+        console.error('generateProductPdf error:', error);
+        throw error;
+    }
+}
+/**
+ * カタログPDF生成（複数製品→1つのPDF）
  */
 function generateCatalogPdf(productIds) {
-    // TODO: PDF生成実装
-    // 現時点ではスタブとして、DriveにPDFを作成するロジックを記述予定
-    return {
-        success: false,
-        message: 'PDF生成機能は現在開発中です',
-        productIds,
-    };
+    var _a, _b, _c, _d, _e, _f, _g;
+    try {
+        if (!productIds || productIds.length === 0) {
+            throw new Error('製品IDが指定されていません');
+        }
+        if (productIds.length > 50) {
+            throw new Error('一度に出力できるのは最大50製品までです');
+        }
+        const spreadsheetId = getSpreadsheetId();
+        const service = new ProductService_1.ProductService(spreadsheetId);
+        let pagesHtml = '';
+        for (let i = 0; i < productIds.length; i++) {
+            const product = service.getProductDetail(productIds[i]);
+            if (!product)
+                continue;
+            // 写真URLを解析
+            const rawPhotos = product.rawPhotoUrls && product.rawPhotoUrls.startsWith('[')
+                ? JSON.parse(product.rawPhotoUrls) : (product.rawPhotoUrls ? [product.rawPhotoUrls] : []);
+            const finishedPhotos = product.finishedPhotoUrls && product.finishedPhotoUrls.startsWith('[')
+                ? JSON.parse(product.finishedPhotoUrls) : (product.finishedPhotoUrls ? [product.finishedPhotoUrls] : []);
+            // サイズ文字列
+            const rawSize = [(_a = product.rawSize) === null || _a === void 0 ? void 0 : _a.length, (_b = product.rawSize) === null || _b === void 0 ? void 0 : _b.width, (_c = product.rawSize) === null || _c === void 0 ? void 0 : _c.thickness]
+                .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
+            const finishedSize = [(_d = product.finishedSize) === null || _d === void 0 ? void 0 : _d.length, (_e = product.finishedSize) === null || _e === void 0 ? void 0 : _e.width, (_f = product.finishedSize) === null || _f === void 0 ? void 0 : _f.thickness]
+                .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
+            // 販売価格
+            const priceIncTax = ((_g = product.calculated) === null || _g === void 0 ? void 0 : _g.sellingPriceIncTax)
+                ? '¥' + Math.round(product.calculated.sellingPriceIncTax).toLocaleString()
+                : '-';
+            // 写真HTML（最大3枚）
+            let photoHtml = '';
+            const allPhotos = rawPhotos.concat(finishedPhotos).slice(0, 3);
+            for (const url of allPhotos) {
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (match) {
+                    photoHtml += '<img src="https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w300" style="max-width:200px;max-height:150px;margin:4px;border-radius:4px;">';
+                }
+            }
+            const pageBreak = i > 0 ? 'page-break-before: always;' : '';
+            pagesHtml += `
+        <div style="${pageBreak} padding: 20px 0;">
+          <h2 style="font-size:20px; color:#2c5530; border-bottom:2px solid #2c5530; padding-bottom:6px;">
+            ${escapeHtmlForPdf(product.productName)}
+          </h2>
+          <p style="color:#888; font-size:11px; margin:4px 0 12px;">${escapeHtmlForPdf(product.productId)}</p>
+          ${photoHtml ? '<div style="margin:12px 0;">' + photoHtml + '</div>' : ''}
+          <table style="width:100%; border-collapse:collapse; margin-bottom:12px;">
+            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; width:120px; font-size:12px;">大分類</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(product.majorCategory || '-')}</td></tr>
+            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">樹種</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(product.woodType || '-')}</td></tr>
+            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">入荷時サイズ</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(rawSize)}</td></tr>
+            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">仕上げ後サイズ</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(finishedSize)}</td></tr>
+            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">販売価格(税込)</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:16px; font-weight:700; color:#2c5530;">${escapeHtmlForPdf(priceIncTax)}</td></tr>
+          </table>
+          ${product.remarks ? '<p style="font-size:11px; color:#666;">' + escapeHtmlForPdf(product.remarks) + '</p>' : ''}
+        </div>
+      `;
+        }
+        if (!pagesHtml) {
+            throw new Error('有効な製品が見つかりませんでした');
+        }
+        const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Noto Sans JP', sans-serif; margin: 30px; color: #333; }
+        </style>
+      </head>
+      <body>
+        <div style="text-align:center; margin-bottom:20px;">
+          <h1 style="font-size:22px; color:#2c5530;">製品カタログ</h1>
+          <p style="font-size:11px; color:#888;">${new Date().toLocaleDateString('ja-JP')} 作成 / ${productIds.length}製品</p>
+        </div>
+        ${pagesHtml}
+        <div style="margin-top:30px; font-size:10px; color:#aaa; text-align:center;">
+          野村木材 在庫管理システム
+        </div>
+      </body>
+      </html>
+    `;
+        // PDF生成
+        const blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf');
+        blob.setName('カタログ_' + new Date().toISOString().slice(0, 10) + '.pdf');
+        // Driveに保存
+        let folder;
+        try {
+            const folderId = getPhotoFolderId();
+            folder = DriveApp.getFolderById(folderId);
+        }
+        catch {
+            folder = DriveApp.getRootFolder();
+        }
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        return {
+            success: true,
+            url: file.getUrl(),
+            fileName: file.getName(),
+            productCount: productIds.length,
+        };
+    }
+    catch (error) {
+        console.error('generateCatalogPdf error:', error);
+        throw error;
+    }
+}
+/**
+ * PDF用HTMLエスケープ
+ */
+function escapeHtmlForPdf(str) {
+    if (!str)
+        return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 /**
  * CSVエクスポート
@@ -3305,6 +3592,7 @@ __webpack_require__.g.getProductDetail = getProductDetail;
 __webpack_require__.g.createProduct = createProduct;
 __webpack_require__.g.updateProduct = updateProduct;
 __webpack_require__.g.deleteProduct = deleteProduct;
+__webpack_require__.g.updateProductStatus = updateProductStatus;
 __webpack_require__.g.getDashboardStats = getDashboardStats;
 // 販売API
 __webpack_require__.g.sellProduct = sellProduct;
@@ -3321,10 +3609,12 @@ __webpack_require__.g.getSuppliers = getSuppliers;
 __webpack_require__.g.getProcessors = getProcessors;
 __webpack_require__.g.getStorageLocations = getStorageLocations;
 __webpack_require__.g.getMajorCategories = getMajorCategories;
-__webpack_require__.g.getMinorCategories = getMinorCategories;
 __webpack_require__.g.addMasterData = addMasterData;
 __webpack_require__.g.deleteMasterData = deleteMasterData;
 __webpack_require__.g.getUniqueCategoryValues = getUniqueCategoryValues;
+// 必須項目設定API
+__webpack_require__.g.getRequiredFields = getRequiredFields;
+__webpack_require__.g.setRequiredFields = setRequiredFields;
 // 棚卸しAPI
 __webpack_require__.g.startInventorySession = startInventorySession;
 __webpack_require__.g.getInventoryProgress = getInventoryProgress;
@@ -3338,6 +3628,7 @@ __webpack_require__.g.setupPhotoFolderId = setupPhotoFolderId;
 __webpack_require__.g.uploadProductPhoto = uploadProductPhoto;
 // レポートAPI
 __webpack_require__.g.getInventoryReport = getInventoryReport;
+__webpack_require__.g.generateProductPdf = generateProductPdf;
 __webpack_require__.g.generateCatalogPdf = generateCatalogPdf;
 __webpack_require__.g.exportCsv = exportCsv;
 // データセットアップ
@@ -3357,7 +3648,7 @@ __webpack_require__.g.clearAllData = setupData_1.clearAllData;
  * 樹種、仕入れ先、加工業者、保管場所マスターを管理
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MinorCategoryRepository = exports.MajorCategoryRepository = exports.StorageLocationRepository = exports.ProcessorRepository = exports.SupplierRepository = exports.WoodTypeRepository = void 0;
+exports.MajorCategoryRepository = exports.StorageLocationRepository = exports.ProcessorRepository = exports.SupplierRepository = exports.WoodTypeRepository = void 0;
 const BaseRepository_1 = __webpack_require__(153);
 const common_1 = __webpack_require__(798);
 const master_1 = __webpack_require__(877);
@@ -3639,61 +3930,6 @@ class MajorCategoryRepository extends BaseRepository_1.BaseRepository {
     }
 }
 exports.MajorCategoryRepository = MajorCategoryRepository;
-// ==================== 中分類リポジトリ ====================
-class MinorCategoryRepository extends BaseRepository_1.BaseRepository {
-    constructor(spreadsheetId) {
-        const config = {
-            spreadsheetId,
-            sheetName: common_1.SHEET_NAMES.MINOR_CATEGORIES_MASTER,
-            headers: master_1.MINOR_CATEGORY_HEADERS,
-        };
-        super(config);
-    }
-    rowToEntity(row) {
-        return (0, master_1.rowToMinorCategory)(row);
-    }
-    entityToRow(entity) {
-        return (0, master_1.minorCategoryToRow)(entity);
-    }
-    getIdColumnIndex() {
-        return 0; // categoryId
-    }
-    /**
-     * 名前で検索
-     */
-    findByName(name) {
-        const found = this.findWhere((c) => c.name === name);
-        return found.length > 0 ? found[0] : null;
-    }
-    /**
-     * 表示順でソートして取得
-     */
-    findAllSorted() {
-        return this.findAll().sort((a, b) => a.displayOrder - b.displayOrder);
-    }
-    /**
-     * 新規登録
-     */
-    createFromDto(dto) {
-        var _a;
-        const existingIds = this.findAll().map((c) => c.categoryId);
-        const nextNum = existingIds.length + 1;
-        const categoryId = `SCAT-${String(nextNum).padStart(4, '0')}`;
-        const category = {
-            categoryId,
-            name: dto.name,
-            displayOrder: (_a = dto.displayOrder) !== null && _a !== void 0 ? _a : nextNum,
-        };
-        return this.create(category);
-    }
-    /**
-     * 名前の重複チェック
-     */
-    isNameExists(name, excludeId) {
-        return this.findAll().some((c) => c.name === name && c.categoryId !== excludeId);
-    }
-}
-exports.MinorCategoryRepository = MinorCategoryRepository;
 
 
 /***/ },
@@ -3908,9 +4144,6 @@ function rowToProduct(row) {
     return {
         productId: String((_a = row[C.PRODUCT_ID]) !== null && _a !== void 0 ? _a : ''),
         majorCategory: (_b = row[C.MAJOR_CATEGORY]) !== null && _b !== void 0 ? _b : 'その他',
-        minorCategory: row[C.MINOR_CATEGORY]
-            ? row[C.MINOR_CATEGORY]
-            : undefined,
         productName: String((_c = row[C.PRODUCT_NAME]) !== null && _c !== void 0 ? _c : ''),
         woodType: String((_d = row[C.WOOD_TYPE]) !== null && _d !== void 0 ? _d : ''),
         rawSize: {
@@ -3965,46 +4198,46 @@ function rowToProduct(row) {
  * 製品オブジェクトを行データに変換
  */
 function productToRow(product) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7;
     const C = exports.PRODUCT_COLUMNS;
     const row = new Array(37).fill('');
     row[C.PRODUCT_ID] = product.productId;
     row[C.MAJOR_CATEGORY] = product.majorCategory;
-    row[C.MINOR_CATEGORY] = (_a = product.minorCategory) !== null && _a !== void 0 ? _a : '';
+    row[C.MINOR_CATEGORY] = '';
     row[C.PRODUCT_NAME] = product.productName;
     row[C.WOOD_TYPE] = product.woodType;
-    row[C.RAW_LENGTH] = (_c = (_b = product.rawSize) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : '';
-    row[C.RAW_WIDTH] = (_e = (_d = product.rawSize) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : '';
-    row[C.RAW_THICKNESS] = (_g = (_f = product.rawSize) === null || _f === void 0 ? void 0 : _f.thickness) !== null && _g !== void 0 ? _g : '';
-    row[C.FINISHED_LENGTH] = (_j = (_h = product.finishedSize) === null || _h === void 0 ? void 0 : _h.length) !== null && _j !== void 0 ? _j : '';
-    row[C.FINISHED_WIDTH] = (_l = (_k = product.finishedSize) === null || _k === void 0 ? void 0 : _k.width) !== null && _l !== void 0 ? _l : '';
-    row[C.FINISHED_THICKNESS] = (_o = (_m = product.finishedSize) === null || _m === void 0 ? void 0 : _m.thickness) !== null && _o !== void 0 ? _o : '';
-    row[C.RAW_PHOTO_URLS] = (_p = product.rawPhotoUrls) !== null && _p !== void 0 ? _p : '';
-    row[C.FINISHED_PHOTO_URLS] = (_q = product.finishedPhotoUrls) !== null && _q !== void 0 ? _q : '';
+    row[C.RAW_LENGTH] = (_b = (_a = product.rawSize) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : '';
+    row[C.RAW_WIDTH] = (_d = (_c = product.rawSize) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : '';
+    row[C.RAW_THICKNESS] = (_f = (_e = product.rawSize) === null || _e === void 0 ? void 0 : _e.thickness) !== null && _f !== void 0 ? _f : '';
+    row[C.FINISHED_LENGTH] = (_h = (_g = product.finishedSize) === null || _g === void 0 ? void 0 : _g.length) !== null && _h !== void 0 ? _h : '';
+    row[C.FINISHED_WIDTH] = (_k = (_j = product.finishedSize) === null || _j === void 0 ? void 0 : _j.width) !== null && _k !== void 0 ? _k : '';
+    row[C.FINISHED_THICKNESS] = (_m = (_l = product.finishedSize) === null || _l === void 0 ? void 0 : _l.thickness) !== null && _m !== void 0 ? _m : '';
+    row[C.RAW_PHOTO_URLS] = (_o = product.rawPhotoUrls) !== null && _o !== void 0 ? _o : '';
+    row[C.FINISHED_PHOTO_URLS] = (_p = product.finishedPhotoUrls) !== null && _p !== void 0 ? _p : '';
     row[C.SUPPLIER_ID] = product.supplierId;
     row[C.PURCHASE_DATE] = product.purchaseDate;
     row[C.PURCHASE_PRICE] = product.purchasePrice;
     row[C.STORAGE_LOCATION_ID] = product.storageLocationId;
-    row[C.SHIPPING_COST] = (_r = product.shippingCost) !== null && _r !== void 0 ? _r : '';
-    row[C.PROFIT_MARGIN] = (_s = product.profitMargin) !== null && _s !== void 0 ? _s : '';
-    row[C.PRICE_ADJUSTMENT] = (_t = product.priceAdjustment) !== null && _t !== void 0 ? _t : '';
+    row[C.SHIPPING_COST] = (_q = product.shippingCost) !== null && _q !== void 0 ? _q : '';
+    row[C.PROFIT_MARGIN] = (_r = product.profitMargin) !== null && _r !== void 0 ? _r : '';
+    row[C.PRICE_ADJUSTMENT] = (_s = product.priceAdjustment) !== null && _s !== void 0 ? _s : '';
     row[C.STATUS] = product.status;
-    row[C.SALES_DESTINATION] = (_u = product.salesDestination) !== null && _u !== void 0 ? _u : '';
-    row[C.SALES_DATE] = (_v = product.salesDate) !== null && _v !== void 0 ? _v : '';
-    row[C.ACTUAL_SALES_PRICE] = (_w = product.actualSalesPrice) !== null && _w !== void 0 ? _w : '';
-    row[C.SALES_REMARKS] = (_x = product.salesRemarks) !== null && _x !== void 0 ? _x : '';
-    row[C.LAST_INVENTORY_DATE] = (_y = product.lastInventoryDate) !== null && _y !== void 0 ? _y : '';
-    row[C.DELETED_AT] = (_z = product.deletedAt) !== null && _z !== void 0 ? _z : '';
-    row[C.DELETE_REASON] = (_0 = product.deleteReason) !== null && _0 !== void 0 ? _0 : '';
-    row[C.REMARKS] = (_1 = product.remarks) !== null && _1 !== void 0 ? _1 : '';
+    row[C.SALES_DESTINATION] = (_t = product.salesDestination) !== null && _t !== void 0 ? _t : '';
+    row[C.SALES_DATE] = (_u = product.salesDate) !== null && _u !== void 0 ? _u : '';
+    row[C.ACTUAL_SALES_PRICE] = (_v = product.actualSalesPrice) !== null && _v !== void 0 ? _v : '';
+    row[C.SALES_REMARKS] = (_w = product.salesRemarks) !== null && _w !== void 0 ? _w : '';
+    row[C.LAST_INVENTORY_DATE] = (_x = product.lastInventoryDate) !== null && _x !== void 0 ? _x : '';
+    row[C.DELETED_AT] = (_y = product.deletedAt) !== null && _y !== void 0 ? _y : '';
+    row[C.DELETE_REASON] = (_z = product.deleteReason) !== null && _z !== void 0 ? _z : '';
+    row[C.REMARKS] = (_0 = product.remarks) !== null && _0 !== void 0 ? _0 : '';
     row[C.CREATED_AT] = product.createdAt;
-    row[C.UPDATED_AT] = (_2 = product.updatedAt) !== null && _2 !== void 0 ? _2 : '';
-    row[C.CREATED_BY] = (_3 = product.createdBy) !== null && _3 !== void 0 ? _3 : '';
-    row[C.UPDATED_BY] = (_4 = product.updatedBy) !== null && _4 !== void 0 ? _4 : '';
-    row[C.SHIPPING_CARRIER] = (_5 = product.shippingCarrier) !== null && _5 !== void 0 ? _5 : '';
-    row[C.DELIVERY_DATE] = (_6 = product.deliveryDate) !== null && _6 !== void 0 ? _6 : '';
-    row[C.NEGOTIATOR] = (_7 = product.negotiator) !== null && _7 !== void 0 ? _7 : '';
-    row[C.DEPARTMENT] = (_8 = product.department) !== null && _8 !== void 0 ? _8 : '';
+    row[C.UPDATED_AT] = (_1 = product.updatedAt) !== null && _1 !== void 0 ? _1 : '';
+    row[C.CREATED_BY] = (_2 = product.createdBy) !== null && _2 !== void 0 ? _2 : '';
+    row[C.UPDATED_BY] = (_3 = product.updatedBy) !== null && _3 !== void 0 ? _3 : '';
+    row[C.SHIPPING_CARRIER] = (_4 = product.shippingCarrier) !== null && _4 !== void 0 ? _4 : '';
+    row[C.DELIVERY_DATE] = (_5 = product.deliveryDate) !== null && _5 !== void 0 ? _5 : '';
+    row[C.NEGOTIATOR] = (_6 = product.negotiator) !== null && _6 !== void 0 ? _6 : '';
+    row[C.DEPARTMENT] = (_7 = product.department) !== null && _7 !== void 0 ? _7 : '';
     return row;
 }
 
@@ -4179,7 +4412,7 @@ function getNextInventorySessionSequence(existingSessionIds, date) {
  * 共通型定義
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.VALIDATION_CONSTRAINTS = exports.DEFAULTS = exports.TARGET_TYPES = exports.OPERATION_TYPES = exports.CONFIRMATION_METHODS = exports.PROCESSING_TYPES = exports.MINOR_CATEGORIES = exports.MAJOR_CATEGORIES = exports.SHEET_NAMES = void 0;
+exports.VALIDATION_CONSTRAINTS = exports.DEFAULTS = exports.TARGET_TYPES = exports.OPERATION_TYPES = exports.CONFIRMATION_METHODS = exports.PROCESSING_TYPES = exports.MAJOR_CATEGORIES = exports.SHEET_NAMES = void 0;
 /**
  * シート名列挙
  */
@@ -4198,7 +4431,6 @@ exports.SHEET_NAMES = {
     PHOTOS: '写真管理',
     SEQUENCES: 'シーケンス管理',
     MAJOR_CATEGORIES_MASTER: '大分類マスター',
-    MINOR_CATEGORIES_MASTER: '中分類マスター',
 };
 /**
  * 大分類（自由記述。デフォルト候補はマスターシートから取得）
@@ -4210,10 +4442,6 @@ exports.MAJOR_CATEGORIES = [
     '足',
     'その他',
 ];
-/**
- * 中分類（自由記述。デフォルト候補はマスターシートから取得）
- */
-exports.MINOR_CATEGORIES = ['家具', '雑貨', '加工材料', 'その他'];
 /**
  * 加工種別
  */
@@ -4503,7 +4731,7 @@ exports.SalesService = SalesService;
  * マスターデータ型定義
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.INITIAL_STORAGE_LOCATIONS = exports.INITIAL_WOOD_TYPES = exports.MINOR_CATEGORY_HEADERS = exports.MINOR_CATEGORY_COLUMNS = exports.MAJOR_CATEGORY_HEADERS = exports.MAJOR_CATEGORY_COLUMNS = exports.STORAGE_LOCATION_HEADERS = exports.STORAGE_LOCATION_COLUMNS = exports.PROCESSOR_HEADERS = exports.PROCESSOR_COLUMNS = exports.SUPPLIER_HEADERS = exports.SUPPLIER_COLUMNS = exports.WOOD_TYPE_HEADERS = exports.WOOD_TYPE_COLUMNS = void 0;
+exports.INITIAL_STORAGE_LOCATIONS = exports.INITIAL_WOOD_TYPES = exports.MAJOR_CATEGORY_HEADERS = exports.MAJOR_CATEGORY_COLUMNS = exports.STORAGE_LOCATION_HEADERS = exports.STORAGE_LOCATION_COLUMNS = exports.PROCESSOR_HEADERS = exports.PROCESSOR_COLUMNS = exports.SUPPLIER_HEADERS = exports.SUPPLIER_COLUMNS = exports.WOOD_TYPE_HEADERS = exports.WOOD_TYPE_COLUMNS = void 0;
 exports.rowToWoodType = rowToWoodType;
 exports.woodTypeToRow = woodTypeToRow;
 exports.rowToSupplier = rowToSupplier;
@@ -4514,8 +4742,6 @@ exports.rowToStorageLocation = rowToStorageLocation;
 exports.storageLocationToRow = storageLocationToRow;
 exports.rowToMajorCategory = rowToMajorCategory;
 exports.majorCategoryToRow = majorCategoryToRow;
-exports.rowToMinorCategory = rowToMinorCategory;
-exports.minorCategoryToRow = minorCategoryToRow;
 // ==================== 樹種マスター ====================
 exports.WOOD_TYPE_COLUMNS = {
     WOOD_TYPE_ID: 0,
@@ -4658,30 +4884,6 @@ function rowToMajorCategory(row) {
 }
 function majorCategoryToRow(category) {
     const C = exports.MAJOR_CATEGORY_COLUMNS;
-    const row = new Array(3).fill('');
-    row[C.CATEGORY_ID] = category.categoryId;
-    row[C.NAME] = category.name;
-    row[C.DISPLAY_ORDER] = category.displayOrder;
-    return row;
-}
-// ==================== 中分類マスター ====================
-exports.MINOR_CATEGORY_COLUMNS = {
-    CATEGORY_ID: 0,
-    NAME: 1,
-    DISPLAY_ORDER: 2,
-};
-exports.MINOR_CATEGORY_HEADERS = ['カテゴリID', 'カテゴリ名', '表示順'];
-function rowToMinorCategory(row) {
-    var _a, _b;
-    const C = exports.MINOR_CATEGORY_COLUMNS;
-    return {
-        categoryId: String((_a = row[C.CATEGORY_ID]) !== null && _a !== void 0 ? _a : ''),
-        name: String((_b = row[C.NAME]) !== null && _b !== void 0 ? _b : ''),
-        displayOrder: Number(row[C.DISPLAY_ORDER]) || 0,
-    };
-}
-function minorCategoryToRow(category) {
-    const C = exports.MINOR_CATEGORY_COLUMNS;
     const row = new Array(3).fill('');
     row[C.CATEGORY_ID] = category.categoryId;
     row[C.NAME] = category.name;

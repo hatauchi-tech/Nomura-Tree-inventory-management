@@ -11,7 +11,7 @@ const App = {
     processors: [],
     storageLocations: [],
     majorCategories: [],
-    minorCategories: [],
+    requiredFields: [],
   },
 
   /**
@@ -22,6 +22,9 @@ const App = {
 
     // ナビゲーションのイベント設定
     this.setupNavigation();
+
+    // サイドバー折りたたみ状態を復元
+    this.restoreSidebarState();
 
     // マスターデータの読み込み
     await this.loadMasterData();
@@ -82,6 +85,38 @@ const App = {
     if (sidebar) {
       sidebar.classList.remove('open');
     }
+  },
+
+  /**
+   * サイドバー折りたたみトグル
+   */
+  toggleSidebarCollapse() {
+    var sidebar = document.getElementById('sidebar');
+    var mainContent = document.getElementById('mainContent');
+    if (!sidebar) return;
+
+    var isCollapsed = sidebar.classList.toggle('collapsed');
+    if (mainContent) {
+      mainContent.classList.toggle('sidebar-collapsed', isCollapsed);
+    }
+    try {
+      localStorage.setItem('sidebarCollapsed', isCollapsed ? '1' : '');
+    } catch (e) {}
+  },
+
+  /**
+   * サイドバー折りたたみ状態を復元
+   */
+  restoreSidebarState() {
+    try {
+      var collapsed = localStorage.getItem('sidebarCollapsed');
+      if (collapsed === '1') {
+        var sidebar = document.getElementById('sidebar');
+        var mainContent = document.getElementById('mainContent');
+        if (sidebar) sidebar.classList.add('collapsed');
+        if (mainContent) mainContent.classList.add('sidebar-collapsed');
+      }
+    } catch (e) {}
   },
 
   /**
@@ -158,13 +193,13 @@ const App = {
   async loadMasterData() {
     try {
       // 並列でマスターデータを取得
-      const [woodTypes, suppliers, processors, storageLocations, majorCategories, minorCategories] = await Promise.all([
+      const [woodTypes, suppliers, processors, storageLocations, majorCategories, requiredFields] = await Promise.all([
         Api.getWoodTypes().catch(() => []),
         Api.getSuppliers().catch(() => []),
         Api.getProcessors().catch(() => []),
         Api.getStorageLocations().catch(() => []),
         Api.getMajorCategories().catch(() => []),
-        Api.getMinorCategories().catch(() => []),
+        Api.getRequiredFields().catch(() => []),
       ]);
 
       this.masterData = {
@@ -173,7 +208,7 @@ const App = {
         processors: processors || [],
         storageLocations: storageLocations || [],
         majorCategories: majorCategories || [],
-        minorCategories: minorCategories || [],
+        requiredFields: requiredFields || [],
       };
 
       console.log('Master data loaded:', this.masterData);
@@ -186,7 +221,7 @@ const App = {
         processors: [],
         storageLocations: [],
         majorCategories: [],
-        minorCategories: [],
+        requiredFields: [],
       };
       Toast.error('マスターデータの読み込みに失敗しました');
     }
@@ -423,9 +458,12 @@ const ProductList = {
   currentPage: 1,
   limit: 20,
   total: 0,
+  selectionMode: false,
+  selectedProducts: new Set(),
 
   async init() {
-    // 保管場所・樹種セレクトボックスを初期化
+    // フィルターセレクトボックスを初期化
+    App.populateSelect('filterCategory', App.masterData.majorCategories, 'name', 'name', 'すべての分類');
     App.populateSelect('filterStorageLocation', App.masterData.storageLocations, 'storageLocationId', 'name', 'すべての保管場所');
     App.populateSelect('filterWoodType', App.masterData.woodTypes, 'name', 'name', 'すべての樹種');
 
@@ -462,7 +500,7 @@ const ProductList = {
       filterWoodType.addEventListener('change', function() { ProductList.loadProducts(); });
     }
 
-    const sizeInputIds = ['filterMinLength', 'filterMaxLength', 'filterMinWidth', 'filterMaxWidth'];
+    const sizeInputIds = ['filterMinLength', 'filterMaxLength', 'filterMinWidth', 'filterMaxWidth', 'filterMinThickness', 'filterMaxThickness'];
     sizeInputIds.forEach(function(id) {
       var el = document.getElementById(id);
       if (el) {
@@ -471,7 +509,10 @@ const ProductList = {
     });
   },
 
-  async loadProducts() {
+  async loadProducts(resetPage) {
+    if (resetPage !== false) {
+      this.currentPage = 1;
+    }
     try {
       Loading.show();
 
@@ -485,6 +526,8 @@ const ProductList = {
       const maxLength = document.getElementById('filterMaxLength')?.value || '';
       const minWidth = document.getElementById('filterMinWidth')?.value || '';
       const maxWidth = document.getElementById('filterMaxWidth')?.value || '';
+      const minThickness = document.getElementById('filterMinThickness')?.value || '';
+      const maxThickness = document.getElementById('filterMaxThickness')?.value || '';
 
       const conditions = {};
       if (keyword) conditions.keyword = keyword;
@@ -501,6 +544,11 @@ const ProductList = {
         conditions.widthRange = {};
         if (minWidth) conditions.widthRange.min = parseInt(minWidth);
         if (maxWidth) conditions.widthRange.max = parseInt(maxWidth);
+      }
+      if (minThickness || maxThickness) {
+        conditions.thicknessRange = {};
+        if (minThickness) conditions.thicknessRange.min = parseInt(minThickness);
+        if (maxThickness) conditions.thicknessRange.max = parseInt(maxThickness);
       }
 
       console.log('loadProducts: conditions=', conditions);
@@ -543,7 +591,15 @@ const ProductList = {
     for (var i = 0; i < this.products.length; i++) {
       var p = this.products[i];
       var photoUrl = this.convertDriveUrl(p.rawPhotoUrl);
-      html += '<div class="card product-card" onclick="App.navigateTo(\'product-detail\', { productId: \'' + p.productId + '\' })">';
+      var isSelected = this.selectedProducts.has(p.productId);
+
+      if (this.selectionMode) {
+        html += '<div class="card product-card selectable' + (isSelected ? ' selected' : '') + '" onclick="ProductList.toggleSelection(\'' + p.productId + '\')" data-product-id="' + p.productId + '">';
+        html += '<div class="product-card-checkbox">' + (isSelected ? '✓' : '') + '</div>';
+      } else {
+        html += '<div class="card product-card" onclick="App.navigateTo(\'product-detail\', { productId: \'' + p.productId + '\' })">';
+      }
+
       if (photoUrl) {
         html += '<img class="product-card-image" src="' + Utils.escapeHtml(photoUrl) + '" alt="' + Utils.escapeHtml(p.productName) + '" onerror="this.style.display=\'none\'">';
       } else {
@@ -560,6 +616,53 @@ const ProductList = {
       html += '</div>';
     }
     grid.innerHTML = html;
+    this.renderPagination();
+  },
+
+  renderPagination() {
+    var container = document.getElementById('pagination');
+    if (!container) return;
+    var totalPages = Math.ceil(this.total / this.limit);
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+    var current = this.currentPage;
+    var html = '';
+    // 前へボタン
+    html += '<button class="pagination-btn" ' + (current <= 1 ? 'disabled' : '') + ' onclick="ProductList.goToPage(' + (current - 1) + ')">&#8249; 前へ</button>';
+    // ページ番号（最大7ページ分表示）
+    var startPage = Math.max(1, current - 3);
+    var endPage = Math.min(totalPages, startPage + 6);
+    if (endPage - startPage < 6) {
+      startPage = Math.max(1, endPage - 6);
+    }
+    if (startPage > 1) {
+      html += '<button class="pagination-btn" onclick="ProductList.goToPage(1)">1</button>';
+      if (startPage > 2) html += '<span class="pagination-info">...</span>';
+    }
+    for (var i = startPage; i <= endPage; i++) {
+      html += '<button class="pagination-btn' + (i === current ? ' active' : '') + '" onclick="ProductList.goToPage(' + i + ')">' + i + '</button>';
+    }
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) html += '<span class="pagination-info">...</span>';
+      html += '<button class="pagination-btn" onclick="ProductList.goToPage(' + totalPages + ')">' + totalPages + '</button>';
+    }
+    // 次へボタン
+    html += '<button class="pagination-btn" ' + (current >= totalPages ? 'disabled' : '') + ' onclick="ProductList.goToPage(' + (current + 1) + ')">次へ &#8250;</button>';
+    // ページ情報
+    html += '<span class="pagination-info" style="margin-left:8px;">' + current + ' / ' + totalPages + ' ページ</span>';
+    container.innerHTML = html;
+  },
+
+  goToPage(page) {
+    var totalPages = Math.ceil(this.total / this.limit);
+    if (page < 1 || page > totalPages) return;
+    this.currentPage = page;
+    this.loadProducts(false);
+    // ページ上部にスクロール
+    var grid = document.getElementById('productGrid');
+    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   resetFilters() {
@@ -572,7 +675,92 @@ const ProductList = {
     document.getElementById('filterMaxLength').value = '';
     document.getElementById('filterMinWidth').value = '';
     document.getElementById('filterMaxWidth').value = '';
+    var minThEl = document.getElementById('filterMinThickness');
+    var maxThEl = document.getElementById('filterMaxThickness');
+    if (minThEl) minThEl.value = '';
+    if (maxThEl) maxThEl.value = '';
     this.loadProducts();
+  },
+
+  toggleFilterSidebar() {
+    var sidebar = document.getElementById('filterSidebar');
+    if (sidebar) {
+      sidebar.classList.toggle('open');
+    }
+  },
+
+  enterSelectionMode() {
+    this.selectionMode = true;
+    this.selectedProducts = new Set();
+    var toolbar = document.getElementById('selectionToolbar');
+    if (toolbar) toolbar.classList.remove('hidden');
+    var catalogBtn = document.getElementById('catalogModeBtn');
+    if (catalogBtn) catalogBtn.classList.add('hidden');
+    this.updateSelectionCount();
+    this.renderProducts();
+  },
+
+  exitSelectionMode() {
+    this.selectionMode = false;
+    this.selectedProducts = new Set();
+    var toolbar = document.getElementById('selectionToolbar');
+    if (toolbar) toolbar.classList.add('hidden');
+    var catalogBtn = document.getElementById('catalogModeBtn');
+    if (catalogBtn) catalogBtn.classList.remove('hidden');
+    this.renderProducts();
+  },
+
+  toggleSelection(productId) {
+    if (this.selectedProducts.has(productId)) {
+      this.selectedProducts.delete(productId);
+    } else {
+      if (this.selectedProducts.size >= 50) {
+        Toast.warning('選択は最大50件までです');
+        return;
+      }
+      this.selectedProducts.add(productId);
+    }
+    // DOM更新（再レンダリングせずに要素を更新）
+    var card = document.querySelector('[data-product-id="' + productId + '"]');
+    if (card) {
+      var isSelected = this.selectedProducts.has(productId);
+      card.classList.toggle('selected', isSelected);
+      var checkbox = card.querySelector('.product-card-checkbox');
+      if (checkbox) checkbox.textContent = isSelected ? '✓' : '';
+    }
+    this.updateSelectionCount();
+  },
+
+  updateSelectionCount() {
+    var count = this.selectedProducts.size;
+    var countEl = document.getElementById('selectionCount');
+    if (countEl) countEl.textContent = count + ' 件選択中';
+    var btn = document.getElementById('generateCatalogBtn');
+    if (btn) btn.disabled = count === 0;
+  },
+
+  async generateCatalogPdf() {
+    var ids = Array.from(this.selectedProducts);
+    if (ids.length === 0) {
+      Toast.warning('製品を選択してください');
+      return;
+    }
+
+    try {
+      Loading.show();
+      var result = await Api.call('generateCatalogPdf', ids);
+      if (result && result.url) {
+        window.open(result.url, '_blank');
+        Toast.success('カタログPDFを生成しました（' + ids.length + '製品）');
+      } else {
+        Toast.error('PDF生成に失敗しました');
+      }
+    } catch (error) {
+      console.error('generateCatalogPdf error:', error);
+      Toast.error('PDF生成中にエラーが発生しました: ' + (error.message || ''));
+    } finally {
+      Loading.hide();
+    }
   },
 
   // Google Drive URLを変換
@@ -613,30 +801,8 @@ const ProductForm = {
     App.populateSelect('supplierId', App.masterData.suppliers, 'supplierId', 'name');
     App.populateSelect('storageLocationId', App.masterData.storageLocations, 'storageLocationId', 'name');
 
-    // 大分類・中分類のサジェスト入力を初期化（デフォルト候補＋マスターデータ）
-    var defaultMajor = ['テーブル', 'カウンター', 'スツール', '足', 'その他'];
-    var defaultMinor = ['家具', '雑貨', '加工材料', 'その他'];
-    var majorFromMaster = App.masterData.majorCategories.map(function(c) { return c.name; });
-    var minorFromMaster = App.masterData.minorCategories.map(function(c) { return c.name; });
-    // デフォルト候補とマスターデータをマージ（重複排除）
-    var majorSuggestions = defaultMajor.concat(majorFromMaster.filter(function(v) { return defaultMajor.indexOf(v) === -1; }));
-    var minorSuggestions = defaultMinor.concat(minorFromMaster.filter(function(v) { return defaultMinor.indexOf(v) === -1; }));
-    SuggestInput.init('majorCategory', 'majorCategorySuggest', majorSuggestions);
-    SuggestInput.init('minorCategory', 'minorCategorySuggest', minorSuggestions);
-
-    // カテゴリのユニーク値を非同期で取得してサジェスト候補を更新
-    Api.getUniqueCategoryValues().then(function(result) {
-      if (result) {
-        if (result.majorCategories) {
-          SuggestInput.updateSuggestions('majorCategory', result.majorCategories);
-        }
-        if (result.minorCategories) {
-          SuggestInput.updateSuggestions('minorCategory', result.minorCategories);
-        }
-      }
-    }).catch(function(e) {
-      console.log('Failed to load category suggestions:', e);
-    });
+    // 大分類セレクトボックスを初期化
+    App.populateSelect('majorCategory', App.masterData.majorCategories, 'name', 'name');
 
     // フォームをリセット
     document.getElementById('productForm').reset();
@@ -651,9 +817,7 @@ const ProductForm = {
       document.getElementById('priceAdjustment').value = '0';
     }
 
-    // 写真プレビューをリセット
-    this.clearPhotoPreview('rawPhotoPreview');
-    this.clearPhotoPreview('finishedPhotoPreview');
+    // 写真をリセット
     this.setupPhotoPreview();
 
     // フォーム送信イベント
@@ -689,6 +853,9 @@ const ProductForm = {
 
     // 初期プレビュー更新
     this.updatePricePreview();
+
+    // 必須項目を動的に適用
+    this.applyRequiredFields();
   },
 
   async loadProductForEdit(productId) {
@@ -704,7 +871,6 @@ const ProductForm = {
 
       // フォームにデータを設定
       document.getElementById('majorCategory').value = product.majorCategory || '';
-      document.getElementById('minorCategory').value = product.minorCategory || '';
       document.getElementById('productName').value = product.productName || '';
       document.getElementById('woodType').value = product.woodType || '';
       document.getElementById('storageLocationId').value = product.storageLocationId || '';
@@ -736,18 +902,18 @@ const ProductForm = {
       // 配送業者
       document.getElementById('shippingCarrier').value = product.shippingCarrier || '';
 
-      // 写真URL
+      // 写真URL（JSON配列 or 単一URL）
       if (product.rawPhotoUrls) {
-        const rawUrl = this.convertDriveUrl(product.rawPhotoUrls);
-        document.getElementById('rawPhotoUrl').value = product.rawPhotoUrls;
-        this.updatePhotoPreview('rawPhotoPreview', rawUrl);
-        document.getElementById('rawPhotoRemoveBtn').classList.remove('hidden');
+        try {
+          this.rawPhotos = product.rawPhotoUrls.startsWith('[') ? JSON.parse(product.rawPhotoUrls) : [product.rawPhotoUrls];
+        } catch(e) { this.rawPhotos = [product.rawPhotoUrls]; }
+        this.renderPhotoThumbnails('raw');
       }
       if (product.finishedPhotoUrls) {
-        const finishedUrl = this.convertDriveUrl(product.finishedPhotoUrls);
-        document.getElementById('finishedPhotoUrl').value = product.finishedPhotoUrls;
-        this.updatePhotoPreview('finishedPhotoPreview', finishedUrl);
-        document.getElementById('finishedPhotoRemoveBtn').classList.remove('hidden');
+        try {
+          this.finishedPhotos = product.finishedPhotoUrls.startsWith('[') ? JSON.parse(product.finishedPhotoUrls) : [product.finishedPhotoUrls];
+        } catch(e) { this.finishedPhotos = [product.finishedPhotoUrls]; }
+        this.renderPhotoThumbnails('finished');
       }
 
       // 加工費を読み込み
@@ -793,111 +959,137 @@ const ProductForm = {
     });
   },
 
+  // 複数写真管理用状態
+  rawPhotos: [],
+  finishedPhotos: [],
+  MAX_PHOTOS: 5,
+
   // 写真プレビュー設定（初期化用）
   setupPhotoPreview() {
-    // 削除ボタンを非表示にリセット
-    const rawRemoveBtn = document.getElementById('rawPhotoRemoveBtn');
-    const finishedRemoveBtn = document.getElementById('finishedPhotoRemoveBtn');
-    if (rawRemoveBtn) rawRemoveBtn.classList.add('hidden');
-    if (finishedRemoveBtn) finishedRemoveBtn.classList.add('hidden');
+    this.rawPhotos = [];
+    this.finishedPhotos = [];
+    this.renderPhotoThumbnails('raw');
+    this.renderPhotoThumbnails('finished');
   },
 
   // Google Drive URLを画像URLに変換
   convertDriveUrl(url) {
     if (!url) return null;
-    // Google Drive共有リンクを直接表示用に変換
-    // 形式1: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-    // 形式2: https://drive.google.com/open?id=FILE_ID
-    const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
+    var fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
     if (fileIdMatch) {
-      const fileId = fileIdMatch[1] || fileIdMatch[2];
+      var fileId = fileIdMatch[1] || fileIdMatch[2];
       return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
     }
-    // 既に直接URLの場合はそのまま返す
     return url;
   },
 
-  // 写真プレビューを更新
-  updatePhotoPreview(containerId, url) {
-    var container = document.getElementById(containerId);
+  // サムネイルグリッドをレンダリング（Utils.escapeHtmlでXSS対策済み）
+  renderPhotoThumbnails(type) {
+    var photos = type === 'raw' ? this.rawPhotos : this.finishedPhotos;
+    var container = document.getElementById(type + 'PhotoThumbnails');
     if (!container) return;
 
-    if (url) {
-      container.innerHTML = '<img src="' + Utils.escapeHtml(url) + '" alt="プレビュー" onerror="ProductForm.handlePhotoError(this, \'' + containerId + '\')">';
+    // DOM操作で安全にサムネイルを生成
+    container.textContent = '';
+    if (photos.length === 0) {
+      var placeholder = document.createElement('div');
+      placeholder.className = 'photo-preview-placeholder';
+      placeholder.style.cssText = 'width:80px;height:80px;font-size:24px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--color-border);border-radius:6px;';
+      placeholder.textContent = '📷';
+      container.appendChild(placeholder);
     } else {
-      this.clearPhotoPreview(containerId);
+      photos.forEach(function(url, index) {
+        var thumbUrl = ProductForm.convertDriveUrl(url);
+        var item = document.createElement('div');
+        item.className = 'photo-thumbnail-item';
+        var img = document.createElement('img');
+        img.src = thumbUrl;
+        img.alt = '写真' + (index + 1);
+        img.onerror = function() { item.textContent = 'エラー'; };
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'photo-thumbnail-remove';
+        btn.textContent = '×';
+        btn.onclick = function() { ProductForm.removePhoto(type, index); };
+        item.appendChild(img);
+        item.appendChild(btn);
+        container.appendChild(item);
+      });
     }
+
+    // 5枚上限でボタンの表示/非表示
+    var addBtn = document.getElementById(type + 'PhotoAddBtn');
+    var cameraBtn = document.getElementById(type + 'PhotoCameraBtn');
+    if (addBtn) addBtn.style.display = photos.length >= this.MAX_PHOTOS ? 'none' : '';
+    if (cameraBtn) cameraBtn.style.display = photos.length >= this.MAX_PHOTOS ? 'none' : '';
   },
 
-  // 写真プレビューをクリア
-  clearPhotoPreview(containerId) {
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = '<div class="photo-preview-placeholder">プレビュー</div>';
-    }
-  },
+  // ファイル選択時の処理（複数枚対応）
+  async handleFileSelect(type, fileList) {
+    if (!fileList || fileList.length === 0) return;
 
-  // 写真読み込みエラー時の処理
-  handlePhotoError(img, containerId) {
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = '<div class="photo-preview-placeholder">読み込みエラー</div>';
-    }
-  },
-
-  // ファイル選択時の処理（ファイル選択・カメラ撮影共通）
-  async handleFileSelect(type, file) {
-    if (!file) return;
-
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
-    // バリデーション
-    if (!allowedTypes.includes(file.type)) {
-      Toast.error('対応していないファイル形式です。JPEG、PNG、WebPのみ対応しています。');
+    var photos = type === 'raw' ? this.rawPhotos : this.finishedPhotos;
+    var remaining = this.MAX_PHOTOS - photos.length;
+    if (remaining <= 0) {
+      Toast.warning('写真は最大' + this.MAX_PHOTOS + '枚までです');
       return;
     }
 
-    if (file.size > maxSize) {
-      Toast.error('ファイルサイズが大きすぎます。5MB以下にしてください。');
-      return;
+    var files = Array.from(fileList).slice(0, remaining);
+    if (files.length < fileList.length) {
+      Toast.warning('上限のため ' + files.length + ' 枚のみアップロードします');
     }
 
-    const previewId = type === 'raw' ? 'rawPhotoPreview' : 'finishedPhotoPreview';
-    const urlInputId = type === 'raw' ? 'rawPhotoUrl' : 'finishedPhotoUrl';
-    const uploadingId = type === 'raw' ? 'rawPhotoUploading' : 'finishedPhotoUploading';
-    const removeBtnId = type === 'raw' ? 'rawPhotoRemoveBtn' : 'finishedPhotoRemoveBtn';
+    var maxSize = 5 * 1024 * 1024;
+    var allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    // 先に全ファイルをバリデーション
+    for (var i = 0; i < files.length; i++) {
+      if (!allowedTypes.includes(files[i].type)) {
+        Toast.error((i + 1) + '番目のファイルは対応していない形式です。JPEG、PNG、WebPのみ対応しています。');
+        return;
+      }
+      if (files[i].size > maxSize) {
+        Toast.error((i + 1) + '番目のファイルが5MBを超えています。');
+        return;
+      }
+    }
+
+    var uploadingId = type === 'raw' ? 'rawPhotoUploading' : 'finishedPhotoUploading';
+    var progressId = type === 'raw' ? 'rawPhotoUploadProgress' : 'finishedPhotoUploadProgress';
+    var uploadedCount = 0;
 
     try {
       document.getElementById(uploadingId).classList.remove('hidden');
 
-      // ファイルをBase64に変換
-      const base64Data = await this.fileToBase64(file);
+      for (var i = 0; i < files.length; i++) {
+        var progressEl = document.getElementById(progressId);
+        if (progressEl) {
+          progressEl.textContent = 'アップロード中... (' + (i + 1) + '/' + files.length + ')';
+        }
 
-      // サーバーにアップロード
-      const result = await Api.call('uploadProductPhoto', base64Data, file.name, file.type);
+        var base64Data = await this.fileToBase64(files[i]);
+        var result = await Api.call('uploadProductPhoto', base64Data, files[i].name, files[i].type);
 
-      if (result && result.url) {
-        // URLを保存
-        document.getElementById(urlInputId).value = result.url;
+        if (result && result.url) {
+          photos.push(result.url);
+          this.renderPhotoThumbnails(type);
+          uploadedCount++;
+        } else {
+          Toast.error((i + 1) + '番目のアップロードに失敗しました');
+        }
+      }
 
-        // プレビューを更新
-        const thumbnailUrl = this.convertDriveUrl(result.url);
-        this.updatePhotoPreview(previewId, thumbnailUrl);
-
-        // 削除ボタンを表示
-        document.getElementById(removeBtnId).classList.remove('hidden');
-
-        Toast.success('写真をアップロードしました');
-      } else {
-        Toast.error('アップロードに失敗しました');
+      if (uploadedCount > 0) {
+        Toast.success(uploadedCount + '枚の写真をアップロードしました（' + photos.length + '/' + this.MAX_PHOTOS + '枚）');
       }
     } catch (error) {
       console.error('File upload error:', error);
       Toast.error('アップロード中にエラーが発生しました: ' + (error.message || ''));
     } finally {
       document.getElementById(uploadingId).classList.add('hidden');
-      // ファイル入力をクリア
+      var progressEl = document.getElementById(progressId);
+      if (progressEl) progressEl.textContent = 'アップロード中...';
       var fileInput = document.getElementById(type + 'PhotoFile');
       var cameraInput = document.getElementById(type + 'PhotoCamera');
       if (fileInput) fileInput.value = '';
@@ -905,21 +1097,11 @@ const ProductForm = {
     }
   },
 
-  // 写真を削除
-  removePhoto(type) {
-    const previewId = type === 'raw' ? 'rawPhotoPreview' : 'finishedPhotoPreview';
-    const urlInputId = type === 'raw' ? 'rawPhotoUrl' : 'finishedPhotoUrl';
-    const removeBtnId = type === 'raw' ? 'rawPhotoRemoveBtn' : 'finishedPhotoRemoveBtn';
-
-    // URLをクリア
-    document.getElementById(urlInputId).value = '';
-
-    // プレビューをクリア
-    this.clearPhotoPreview(previewId);
-
-    // 削除ボタンを非表示
-    document.getElementById(removeBtnId).classList.add('hidden');
-
+  // 写真を削除（インデックス指定）
+  removePhoto(type, index) {
+    var photos = type === 'raw' ? this.rawPhotos : this.finishedPhotos;
+    photos.splice(index, 1);
+    this.renderPhotoThumbnails(type);
     Toast.info('写真を削除しました');
   },
 
@@ -1103,20 +1285,19 @@ const ProductForm = {
       thickness: finishedThickness ? parseInt(finishedThickness) : undefined,
     } : undefined;
 
-    // 写真URL
-    const rawPhotoUrl = document.getElementById('rawPhotoUrl')?.value.trim() || undefined;
-    const finishedPhotoUrl = document.getElementById('finishedPhotoUrl')?.value.trim() || undefined;
+    // 写真URL（JSON配列）
+    var rawPhotoUrls = this.rawPhotos.length > 0 ? JSON.stringify(this.rawPhotos) : undefined;
+    var finishedPhotoUrls = this.finishedPhotos.length > 0 ? JSON.stringify(this.finishedPhotos) : undefined;
 
     // フォームデータを収集
     return {
       majorCategory: document.getElementById('majorCategory').value,
-      minorCategory: document.getElementById('minorCategory').value || undefined,
       productName: document.getElementById('productName').value.trim(),
       woodType: document.getElementById('woodType').value,
       rawSize: rawSize,
       finishedSize: finishedSize,
-      rawPhotoUrls: rawPhotoUrl,
-      finishedPhotoUrls: finishedPhotoUrl,
+      rawPhotoUrls: rawPhotoUrls,
+      finishedPhotoUrls: finishedPhotoUrls,
       supplierId: document.getElementById('supplierId').value,
       purchaseDate: document.getElementById('purchaseDate').value,
       purchasePrice: parseInt(document.getElementById('purchasePrice').value.replace(/,/g, '')) || 0,
@@ -1134,37 +1315,92 @@ const ProductForm = {
     };
   },
 
-  validateFormData(data) {
-    const errors = [];
+  // 必須項目フィールドキーとフォーム要素IDのマッピング
+  FIELD_LABEL_MAP: {
+    majorCategory: '大分類',
+    productName: '商品名',
+    woodType: '樹種',
+    storageLocationId: '保管場所',
+    supplierId: '仕入れ先',
+    purchaseDate: '仕入れ日',
+    purchasePrice: '入荷単価',
+    rawLength: '入荷時 長さ',
+    rawWidth: '入荷時 幅',
+    rawThickness: '入荷時 厚み',
+    finishedLength: '仕上げ後 長さ',
+    finishedWidth: '仕上げ後 幅',
+    finishedThickness: '仕上げ後 厚み',
+    shippingCost: '販売時送料',
+    profitMargin: '利益率',
+    remarks: '備考',
+  },
 
-    if (!data.majorCategory) {
-      errors.push('大分類を入力してください');
+  // フィールドキーからフォームデータのパスを解決
+  resolveFieldValue(data, fieldKey) {
+    var sizeMap = {
+      rawLength: function() { return data.rawSize ? data.rawSize.length : null; },
+      rawWidth: function() { return data.rawSize ? data.rawSize.width : null; },
+      rawThickness: function() { return data.rawSize ? data.rawSize.thickness : null; },
+      finishedLength: function() { return data.finishedSize ? data.finishedSize.length : null; },
+      finishedWidth: function() { return data.finishedSize ? data.finishedSize.width : null; },
+      finishedThickness: function() { return data.finishedSize ? data.finishedSize.thickness : null; },
+    };
+    if (sizeMap[fieldKey]) return sizeMap[fieldKey]();
+    return data[fieldKey];
+  },
+
+  applyRequiredFields() {
+    var requiredFields = App.masterData.requiredFields || [];
+    var allFieldKeys = Object.keys(this.FIELD_LABEL_MAP);
+
+    for (var i = 0; i < allFieldKeys.length; i++) {
+      var key = allFieldKeys[i];
+      var el = document.getElementById(key);
+      if (!el) continue;
+
+      var isRequired = requiredFields.indexOf(key) >= 0;
+      if (isRequired) {
+        el.setAttribute('required', '');
+      } else {
+        el.removeAttribute('required');
+      }
+
+      // ラベルの必須マーク
+      var label = el.closest('.form-group')?.querySelector('.form-label');
+      if (label) {
+        if (isRequired) {
+          label.classList.add('form-label-required');
+        } else {
+          label.classList.remove('form-label-required');
+        }
+      }
+    }
+  },
+
+  validateFormData(data) {
+    var errors = [];
+    var requiredFields = App.masterData.requiredFields || [];
+
+    // 動的必須チェック
+    for (var i = 0; i < requiredFields.length; i++) {
+      var fieldKey = requiredFields[i];
+      var label = this.FIELD_LABEL_MAP[fieldKey];
+      if (!label) continue;
+
+      var value = this.resolveFieldValue(data, fieldKey);
+      if (value == null || value === '' || value === undefined) {
+        errors.push(label + 'を入力してください');
+      }
     }
 
-    if (!data.productName || data.productName.length < 1) {
-      errors.push('商品名を入力してください');
-    } else if (data.productName.length > 100) {
+    // 商品名の長さチェック（必須に関わらず入力がある場合）
+    if (data.productName && data.productName.length > 100) {
       errors.push('商品名は100文字以内で入力してください');
     }
 
-    if (!data.woodType) {
-      errors.push('樹種を選択してください');
-    }
-
-    if (!data.supplierId) {
-      errors.push('仕入れ先を選択してください');
-    }
-
-    if (!data.purchaseDate) {
-      errors.push('仕入れ日を入力してください');
-    }
-
-    if (data.purchasePrice < 0 || data.purchasePrice > 99999999) {
+    // 入荷単価の範囲チェック
+    if (data.purchasePrice != null && (data.purchasePrice < 0 || data.purchasePrice > 99999999)) {
       errors.push('入荷単価は0〜99,999,999円の範囲で入力してください');
-    }
-
-    if (!data.storageLocationId) {
-      errors.push('保管場所を選択してください');
     }
 
     return errors;
@@ -1293,11 +1529,24 @@ const ProductDetail = {
     statusEl.textContent = p.status || '-';
     statusEl.className = `badge ${Utils.getStatusClass(p.status)}`;
 
+    // ステータス変更ドロップダウン
+    var statusSelect = document.getElementById('statusChangeSelect');
+    var statusBtn = document.getElementById('statusChangeBtn');
+    if (statusSelect && statusBtn) {
+      if (p.status === '削除済み') {
+        statusSelect.style.display = 'none';
+        statusBtn.style.display = 'none';
+      } else {
+        statusSelect.style.display = '';
+        statusBtn.style.display = '';
+        statusSelect.value = p.status;
+      }
+    }
+
     // 写真ギャラリー表示
     this.renderPhotoGallery();
 
     document.getElementById('detailMajorCategory').textContent = p.majorCategory || '-';
-    document.getElementById('detailMinorCategory').textContent = p.minorCategory || '-';
     document.getElementById('detailWoodType').textContent = p.woodType || '-';
     document.getElementById('detailStorageLocation').textContent = App.getStorageLocationName(p.storageLocationId || p.storageLocation);
 
@@ -1368,71 +1617,127 @@ const ProductDetail = {
     }
   },
 
-  // 写真ギャラリーを表示
+  // URLをパースしてJSON配列 or 単一URLを配列に変換
+  parsePhotoUrls(urlStr) {
+    if (!urlStr) return [];
+    try {
+      if (urlStr.startsWith('[')) return JSON.parse(urlStr);
+    } catch(e) {}
+    return [urlStr];
+  },
+
+  // カルーセル状態
+  carouselTab: 'raw',
+  carouselIndex: 0,
+
+  // 写真ギャラリーを表示（カルーセル対応）
   renderPhotoGallery() {
     var gallery = document.getElementById('detailGallery');
     if (!gallery) return;
 
     var p = this.product;
-    var rawUrl = p.rawPhotoUrls ? this.convertDriveUrl(p.rawPhotoUrls) : null;
-    var finishedUrl = p.finishedPhotoUrls ? this.convertDriveUrl(p.finishedPhotoUrls) : null;
+    var rawPhotos = this.parsePhotoUrls(p.rawPhotoUrls);
+    var finishedPhotos = this.parsePhotoUrls(p.finishedPhotoUrls);
 
-    if (!rawUrl && !finishedUrl) {
-      gallery.innerHTML = '<div class="product-card-placeholder no-photo-clickable" style="height: 200px;" title="クリックして写真を追加">📷 写真がありません</div>';
-      this.setupNoPhotoUpload(gallery.querySelector('.no-photo-clickable'));
+    if (rawPhotos.length === 0 && finishedPhotos.length === 0) {
+      gallery.textContent = '';
+      var placeholder = document.createElement('div');
+      placeholder.className = 'product-card-placeholder no-photo-clickable';
+      placeholder.style.height = '200px';
+      placeholder.title = 'クリックして写真を追加';
+      placeholder.textContent = '📷 写真がありません';
+      gallery.appendChild(placeholder);
+      this.setupNoPhotoUpload(placeholder);
       return;
     }
 
-    var html = '<div style="display: flex; flex-direction: column; gap: 16px;">';
-
-    // メイン画像
-    var mainUrl = rawUrl || finishedUrl;
-    html += '<div style="text-align: center;">';
-    html += '<img src="' + mainUrl + '" class="product-photo-main" id="mainPhoto" alt="製品写真" onerror="this.style.display=\'none\'">';
-    html += '</div>';
-
-    // サムネイル（両方ある場合）
-    if (rawUrl && finishedUrl) {
-      html += '<div class="product-photos-container">';
-      html += '<div style="text-align: center;">';
-      html += '<img src="' + rawUrl + '" class="product-photo-thumb active" alt="入荷時" onclick="ProductDetail.selectPhoto(0)" onerror="this.style.display=\'none\'">';
-      html += '<p class="text-muted text-sm">入荷時</p>';
-      html += '</div>';
-      html += '<div style="text-align: center;">';
-      html += '<img src="' + finishedUrl + '" class="product-photo-thumb" alt="仕上げ後" onclick="ProductDetail.selectPhoto(1)" onerror="this.style.display=\'none\'">';
-      html += '<p class="text-muted text-sm">仕上げ後</p>';
-      html += '</div>';
-      html += '</div>';
-    } else {
-      html += '<p class="text-muted text-sm" style="text-align: center;">' + (rawUrl ? '入荷時' : '仕上げ後') + '</p>';
-    }
-
-    html += '</div>';
-    gallery.innerHTML = html;
+    this.carouselTab = rawPhotos.length > 0 ? 'raw' : 'finished';
+    this.carouselIndex = 0;
+    this._rawPhotos = rawPhotos;
+    this._finishedPhotos = finishedPhotos;
+    this._buildCarousel(gallery);
   },
 
-  // 写真のURL配列
-  photoUrls: [],
+  _buildCarousel(gallery) {
+    var self = this;
+    var rawPhotos = this._rawPhotos;
+    var finishedPhotos = this._finishedPhotos;
+    var photos = this.carouselTab === 'raw' ? rawPhotos : finishedPhotos;
+    if (this.carouselIndex >= photos.length) this.carouselIndex = 0;
 
-  // 写真選択
-  selectPhoto(index) {
-    var mainPhoto = document.getElementById('mainPhoto');
-    var p = this.product;
-    var rawUrl = p.rawPhotoUrls ? this.convertDriveUrl(p.rawPhotoUrls) : null;
-    var finishedUrl = p.finishedPhotoUrls ? this.convertDriveUrl(p.finishedPhotoUrls) : null;
+    gallery.textContent = '';
 
-    if (mainPhoto) {
-      mainPhoto.src = index === 0 ? rawUrl : finishedUrl;
+    // タブ切替（両方ある場合のみ）
+    if (rawPhotos.length > 0 && finishedPhotos.length > 0) {
+      var tabBar = document.createElement('div');
+      tabBar.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;';
+      var rawTab = document.createElement('button');
+      rawTab.className = 'btn btn-sm ' + (this.carouselTab === 'raw' ? 'btn-primary' : 'btn-secondary');
+      rawTab.textContent = '入荷時（' + rawPhotos.length + '枚）';
+      rawTab.onclick = function() { self.carouselTab = 'raw'; self.carouselIndex = 0; self._buildCarousel(gallery); };
+      var finTab = document.createElement('button');
+      finTab.className = 'btn btn-sm ' + (this.carouselTab === 'finished' ? 'btn-primary' : 'btn-secondary');
+      finTab.textContent = '仕上げ後（' + finishedPhotos.length + '枚）';
+      finTab.onclick = function() { self.carouselTab = 'finished'; self.carouselIndex = 0; self._buildCarousel(gallery); };
+      tabBar.appendChild(rawTab);
+      tabBar.appendChild(finTab);
+      gallery.appendChild(tabBar);
     }
 
-    // アクティブ状態を更新
-    var thumbs = document.querySelectorAll('.product-photo-thumb');
-    for (var i = 0; i < thumbs.length; i++) {
-      if (i === index) {
-        thumbs[i].classList.add('active');
-      } else {
-        thumbs[i].classList.remove('active');
-      }
+    if (photos.length === 0) return;
+
+    // メイン画像 + 左右矢印
+    var mainWrap = document.createElement('div');
+    mainWrap.style.cssText = 'position:relative;text-align:center;';
+
+    var mainImg = document.createElement('img');
+    mainImg.src = this.convertDriveUrl(photos[this.carouselIndex]);
+    mainImg.alt = '製品写真';
+    mainImg.className = 'product-photo-main';
+    mainImg.id = 'mainPhoto';
+    mainImg.onerror = function() { this.style.display = 'none'; };
+    mainWrap.appendChild(mainImg);
+
+    if (photos.length > 1) {
+      var prevBtn = document.createElement('button');
+      prevBtn.textContent = '‹';
+      prevBtn.className = 'btn btn-secondary';
+      prevBtn.style.cssText = 'position:absolute;left:4px;top:50%;transform:translateY(-50%);padding:4px 10px;font-size:20px;opacity:0.8;';
+      prevBtn.onclick = function() { self.carouselIndex = (self.carouselIndex - 1 + photos.length) % photos.length; self._buildCarousel(gallery); };
+      mainWrap.appendChild(prevBtn);
+
+      var nextBtn = document.createElement('button');
+      nextBtn.textContent = '›';
+      nextBtn.className = 'btn btn-secondary';
+      nextBtn.style.cssText = 'position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:4px 10px;font-size:20px;opacity:0.8;';
+      nextBtn.onclick = function() { self.carouselIndex = (self.carouselIndex + 1) % photos.length; self._buildCarousel(gallery); };
+      mainWrap.appendChild(nextBtn);
+    }
+
+    gallery.appendChild(mainWrap);
+
+    // カウンター
+    var counter = document.createElement('p');
+    counter.className = 'text-muted text-sm';
+    counter.style.textAlign = 'center';
+    counter.textContent = (this.carouselIndex + 1) + ' / ' + photos.length + '枚' + (rawPhotos.length > 0 && finishedPhotos.length === 0 ? '（入荷時）' : finishedPhotos.length > 0 && rawPhotos.length === 0 ? '（仕上げ後）' : '');
+    gallery.appendChild(counter);
+
+    // サムネイルストリップ（2枚以上の場合）
+    if (photos.length > 1) {
+      var strip = document.createElement('div');
+      strip.style.cssText = 'display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap;';
+      photos.forEach(function(url, idx) {
+        var thumb = document.createElement('img');
+        thumb.src = self.convertDriveUrl(url);
+        thumb.alt = '写真' + (idx + 1);
+        thumb.className = 'product-photo-thumb' + (idx === self.carouselIndex ? ' active' : '');
+        thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid ' + (idx === self.carouselIndex ? 'var(--color-primary)' : 'transparent') + ';';
+        thumb.onclick = function() { self.carouselIndex = idx; self._buildCarousel(gallery); };
+        thumb.onerror = function() { this.style.display = 'none'; };
+        strip.appendChild(thumb);
+      });
+      gallery.appendChild(strip);
     }
   },
 
@@ -1501,6 +1806,64 @@ const ProductDetail = {
       });
       fileInput.click();
     });
+  },
+
+  // ステータス変更
+  async changeStatus() {
+    var select = document.getElementById('statusChangeSelect');
+    if (!select) return;
+    var newStatus = select.value;
+    var currentStatus = this.product.status;
+
+    if (newStatus === currentStatus) {
+      Toast.info('同じステータスです');
+      return;
+    }
+
+    // 販売済みからの変更時は警告
+    if (currentStatus === '販売済み') {
+      if (!confirm('販売済みから「' + newStatus + '」に変更すると、販売データ（販売先、販売日、実売価格、販売備考）がクリアされます。よろしいですか？')) {
+        select.value = currentStatus;
+        return;
+      }
+    } else {
+      if (!confirm('ステータスを「' + newStatus + '」に変更しますか？')) {
+        select.value = currentStatus;
+        return;
+      }
+    }
+
+    try {
+      Loading.show();
+      await Api.call('updateProductStatus', this.productId, newStatus);
+      Toast.success('ステータスを「' + newStatus + '」に変更しました');
+      await this.loadProduct();
+    } catch (error) {
+      console.error('Failed to change status:', error);
+      Toast.error('ステータス変更に失敗しました: ' + (error.message || ''));
+      select.value = currentStatus;
+    } finally {
+      Loading.hide();
+    }
+  },
+
+  async exportPdf() {
+    if (!this.product) return;
+    try {
+      Loading.show();
+      var result = await Api.generateProductPdf(this.product.productId);
+      if (result && result.success && result.url) {
+        window.open(result.url, '_blank');
+        Toast.success('PDFを生成しました');
+      } else {
+        Toast.error('PDF生成に失敗しました');
+      }
+    } catch (error) {
+      console.error('Export PDF error:', error);
+      Toast.error('PDF生成に失敗しました: ' + (error.message || ''));
+    } finally {
+      Loading.hide();
+    }
   },
 
   renderProcessingCosts() {
@@ -2136,6 +2499,8 @@ const Master = {
     this.renderSuppliers();
     this.renderProcessors();
     this.renderStorageLocations();
+    this.renderMajorCategories();
+    this.renderRequiredFields();
   },
 
   switchTab(tab) {
@@ -2151,6 +2516,74 @@ const Master = {
     tabContent.classList.add('active');
 
     this.currentTab = tab;
+  },
+
+  // ==================== 必須項目設定 ====================
+
+  REQUIRED_FIELD_OPTIONS: [
+    { key: 'majorCategory', label: '大分類' },
+    { key: 'productName', label: '商品名' },
+    { key: 'woodType', label: '樹種' },
+    { key: 'storageLocationId', label: '保管場所' },
+    { key: 'supplierId', label: '仕入れ先' },
+    { key: 'purchaseDate', label: '仕入れ日' },
+    { key: 'purchasePrice', label: '入荷単価' },
+    { key: 'rawLength', label: '入荷時 長さ' },
+    { key: 'rawWidth', label: '入荷時 幅' },
+    { key: 'rawThickness', label: '入荷時 厚み' },
+    { key: 'finishedLength', label: '仕上げ後 長さ' },
+    { key: 'finishedWidth', label: '仕上げ後 幅' },
+    { key: 'finishedThickness', label: '仕上げ後 厚み' },
+    { key: 'shippingCost', label: '販売時送料' },
+    { key: 'profitMargin', label: '利益率' },
+    { key: 'remarks', label: '備考' },
+  ],
+
+  renderRequiredFields() {
+    var container = document.getElementById('requiredFieldsList');
+    if (!container) return;
+
+    var currentRequired = App.masterData.requiredFields || [];
+    // Safe DOM construction - all labels are from hardcoded REQUIRED_FIELD_OPTIONS
+    container.textContent = '';
+    for (var i = 0; i < this.REQUIRED_FIELD_OPTIONS.length; i++) {
+      var opt = this.REQUIRED_FIELD_OPTIONS[i];
+      var checked = currentRequired.indexOf(opt.key) >= 0;
+
+      var div = document.createElement('div');
+      div.className = 'required-field-item';
+
+      var input = document.createElement('input');
+      input.type = 'checkbox';
+      input.className = 'required-field-toggle';
+      input.id = 'reqField_' + opt.key;
+      input.value = opt.key;
+      input.checked = checked;
+
+      var label = document.createElement('label');
+      label.setAttribute('for', 'reqField_' + opt.key);
+      label.textContent = opt.label;
+
+      div.appendChild(input);
+      div.appendChild(label);
+      container.appendChild(div);
+    }
+  },
+
+  async saveRequiredFields() {
+    try {
+      var checkboxes = document.querySelectorAll('#requiredFieldsList .required-field-toggle:checked');
+      var fields = [];
+      for (var i = 0; i < checkboxes.length; i++) {
+        fields.push(checkboxes[i].value);
+      }
+      await Api.setRequiredFields(fields);
+      App.masterData.requiredFields = fields;
+      Toast.success('必須項目設定を保存しました');
+    } catch (error) {
+      console.error('saveRequiredFields error:', error);
+      Toast.error('保存に失敗しました: ' + (error.message || ''));
+    }
   },
 
   // ==================== 樹種マスター ====================
@@ -2560,95 +2993,6 @@ const Master = {
     }
   },
 
-  // ==================== 中分類マスター ====================
-
-  renderMinorCategories() {
-    const tbody = document.getElementById('minorCategoriesBody');
-    if (!tbody) return;
-    if (App.masterData.minorCategories.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">データがありません</td></tr>';
-      return;
-    }
-    tbody.innerHTML = App.masterData.minorCategories
-      .map(
-        (item) => `
-      <tr>
-        <td>${Utils.escapeHtml(item.categoryId)}</td>
-        <td>${Utils.escapeHtml(item.name)}</td>
-        <td>${item.displayOrder || '-'}</td>
-        <td>
-          <button class="btn btn-sm btn-secondary" onclick="Master.editMinorCategory('${item.categoryId}')">編集</button>
-          <button class="btn btn-sm btn-danger" onclick="Master.deleteMinorCategory('${item.categoryId}', '${Utils.escapeHtml(item.name)}')">削除</button>
-        </td>
-      </tr>
-    `
-      )
-      .join('');
-  },
-
-  addMinorCategory() {
-    document.getElementById('minorCategoryModalTitle').textContent = '中分類を追加';
-    document.getElementById('minorCategoryEditId').value = '';
-    document.getElementById('minorCategoryName').value = '';
-    document.getElementById('minorCategoryDisplayOrder').value = '';
-    document.getElementById('minorCategoryModal').classList.remove('hidden');
-  },
-
-  editMinorCategory(id) {
-    const item = App.masterData.minorCategories.find(c => c.categoryId === id);
-    if (!item) {
-      Toast.error('中分類が見つかりません');
-      return;
-    }
-    document.getElementById('minorCategoryModalTitle').textContent = '中分類を編集';
-    document.getElementById('minorCategoryEditId').value = id;
-    document.getElementById('minorCategoryName').value = item.name || '';
-    document.getElementById('minorCategoryDisplayOrder').value = item.displayOrder || '';
-    document.getElementById('minorCategoryModal').classList.remove('hidden');
-  },
-
-  closeMinorCategoryModal() {
-    document.getElementById('minorCategoryModal').classList.add('hidden');
-  },
-
-  async submitMinorCategory() {
-    const editId = document.getElementById('minorCategoryEditId').value;
-    const name = document.getElementById('minorCategoryName').value.trim();
-    const displayOrder = document.getElementById('minorCategoryDisplayOrder').value;
-
-    if (!name) {
-      Toast.warning('カテゴリ名を入力してください');
-      return;
-    }
-
-    try {
-      const data = {
-        name: name,
-        displayOrder: displayOrder ? parseInt(displayOrder) : undefined,
-      };
-
-      await Api.addMasterData('minorCategory', data);
-      Toast.success(editId ? '中分類を更新しました' : '中分類を追加しました');
-      this.closeMinorCategoryModal();
-      await this.loadAllMasters();
-    } catch (error) {
-      console.error('Failed to save minor category:', error);
-      Toast.error('保存に失敗しました');
-    }
-  },
-
-  async deleteMinorCategory(id, name) {
-    if (!confirm(`中分類「${name}」を削除しますか？`)) return;
-
-    try {
-      await Api.deleteMasterData('minorCategory', id);
-      Toast.success('中分類を削除しました');
-      await this.loadAllMasters();
-    } catch (error) {
-      console.error('Failed to delete minor category:', error);
-      Toast.error('削除に失敗しました');
-    }
-  },
 };
 
 /**
@@ -2854,27 +3198,6 @@ const Reports = {
     }
   },
 
-  async generateCatalogPdf() {
-    const filterWoodType = document.getElementById('catalogFilterWoodType')?.value;
-    const filterStatus = document.getElementById('catalogFilterStatus')?.value || '販売中';
-
-    try {
-      Loading.show();
-      const result = await Api.call('generateCatalogPdf', { woodType: filterWoodType, status: filterStatus });
-
-      if (result.success && result.url) {
-        window.open(result.url, '_blank');
-        Toast.success('PDFを生成しました');
-      } else {
-        Toast.warning(result.message || 'PDF生成機能は現在開発中です');
-      }
-    } catch (error) {
-      console.error('Generate PDF error:', error);
-      Toast.error('PDF生成に失敗しました');
-    } finally {
-      Loading.hide();
-    }
-  },
 
   downloadCsv(csvData, filename) {
     const bom = '\uFEFF';

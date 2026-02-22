@@ -682,6 +682,58 @@
   font-style: italic;
 }
 
+/* 選択モード */
+.selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.selection-toolbar span {
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.product-card.selectable {
+  cursor: pointer;
+  position: relative;
+}
+
+.product-card.selectable:hover {
+  border-color: var(--color-primary);
+}
+
+.product-card-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.9);
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  font-size: 14px;
+}
+
+.product-card.selected {
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.product-card.selected .product-card-checkbox {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
 /* Custom Calendar */
 .calendar-overlay {
   position: fixed;

@@ -142,12 +142,6 @@ const Api = {
   },
 
   /**
-   * 中分類一覧を取得
-   */
-  getMinorCategories() {
-    return this.call('getMinorCategories');
-  },
-
   /**
    * カテゴリのユニーク値を取得（サジェスト用）
    */
@@ -167,6 +161,22 @@ const Api = {
    */
   deleteMasterData(type, id) {
     return this.callWithLoading('deleteMasterData', type, id);
+  },
+
+  // ==================== 必須項目設定 ====================
+
+  /**
+   * 必須項目設定を取得
+   */
+  getRequiredFields() {
+    return this.call('getRequiredFields');
+  },
+
+  /**
+   * 必須項目設定を保存
+   */
+  setRequiredFields(fields) {
+    return this.callWithLoading('setRequiredFields', fields);
   },
 
   // ==================== 棚卸し関連 ====================
@@ -218,10 +228,10 @@ const Api = {
   // ==================== ファイル出力 ====================
 
   /**
-   * PDFカタログを生成
+   * 製品PDFを生成
    */
-  generateCatalogPdf(productIds) {
-    return this.callWithLoading('generateCatalogPdf', productIds);
+  generateProductPdf(productId) {
+    return this.callWithLoading('generateProductPdf', productId);
   },
 
   /**
