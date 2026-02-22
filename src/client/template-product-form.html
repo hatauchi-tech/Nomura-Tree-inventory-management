@@ -9,10 +9,10 @@
 
     <div class="form-group">
       <label class="form-label form-label-required" for="majorCategory">大分類</label>
-      <div class="suggest-input-wrapper">
-        <input type="text" class="form-input" id="majorCategory" name="majorCategory" required autocomplete="off" placeholder="入力または候補から選択">
-        <div class="suggest-dropdown hidden" id="majorCategorySuggest"></div>
-      </div>
+      <select class="form-select" id="majorCategory" name="majorCategory" required>
+        <option value="">選択してください</option>
+        <!-- 大分類はマスターデータから動的に読み込み -->
+      </select>
     </div>
 
     <div class="form-group">

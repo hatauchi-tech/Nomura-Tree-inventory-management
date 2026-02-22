@@ -421,7 +421,8 @@ const ProductList = {
   total: 0,
 
   async init() {
-    // 保管場所・樹種セレクトボックスを初期化
+    // フィルターセレクトボックスを初期化
+    App.populateSelect('filterCategory', App.masterData.majorCategories, 'name', 'name', 'すべての分類');
     App.populateSelect('filterStorageLocation', App.masterData.storageLocations, 'storageLocationId', 'name', 'すべての保管場所');
     App.populateSelect('filterWoodType', App.masterData.woodTypes, 'name', 'name', 'すべての樹種');
 
@@ -609,23 +610,8 @@ const ProductForm = {
     App.populateSelect('supplierId', App.masterData.suppliers, 'supplierId', 'name');
     App.populateSelect('storageLocationId', App.masterData.storageLocations, 'storageLocationId', 'name');
 
-    // 大分類のサジェスト入力を初期化（デフォルト候補＋マスターデータ）
-    var defaultMajor = ['テーブル', 'カウンター', 'スツール', '足', 'その他'];
-    var majorFromMaster = App.masterData.majorCategories.map(function(c) { return c.name; });
-    // デフォルト候補とマスターデータをマージ（重複排除）
-    var majorSuggestions = defaultMajor.concat(majorFromMaster.filter(function(v) { return defaultMajor.indexOf(v) === -1; }));
-    SuggestInput.init('majorCategory', 'majorCategorySuggest', majorSuggestions);
-
-    // カテゴリのユニーク値を非同期で取得してサジェスト候補を更新
-    Api.getUniqueCategoryValues().then(function(result) {
-      if (result) {
-        if (result.majorCategories) {
-          SuggestInput.updateSuggestions('majorCategory', result.majorCategories);
-        }
-      }
-    }).catch(function(e) {
-      console.log('Failed to load category suggestions:', e);
-    });
+    // 大分類セレクトボックスを初期化
+    App.populateSelect('majorCategory', App.masterData.majorCategories, 'name', 'name');
 
     // フォームをリセット
     document.getElementById('productForm').reset();
@@ -2122,6 +2108,7 @@ const Master = {
     this.renderSuppliers();
     this.renderProcessors();
     this.renderStorageLocations();
+    this.renderMajorCategories();
   },
 
   switchTab(tab) {
