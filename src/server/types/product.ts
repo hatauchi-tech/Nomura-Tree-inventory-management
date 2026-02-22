@@ -5,7 +5,6 @@
 import {
   BaseEntity,
   MajorCategory,
-  MinorCategory,
   RangeCondition,
   DateRangeCondition,
   BaseSearchCondition,
@@ -42,7 +41,6 @@ export interface Product extends BaseEntity {
   // 基本情報
   productId: string; // 製品ID (ITA-0001形式)
   majorCategory: MajorCategory; // 大分類
-  minorCategory?: MinorCategory; // 中分類
   productName: string; // 商品名
   woodType: string; // 樹種
 
@@ -98,7 +96,6 @@ export interface Product extends BaseEntity {
  */
 export interface CreateProductDto {
   majorCategory: MajorCategory;
-  minorCategory?: MinorCategory;
   productName: string;
   woodType: string;
   rawSize?: Size;
@@ -121,7 +118,6 @@ export interface CreateProductDto {
  */
 export interface UpdateProductDto {
   majorCategory?: MajorCategory;
-  minorCategory?: MinorCategory;
   productName?: string;
   woodType?: string;
   rawSize?: Size;
@@ -145,7 +141,6 @@ export interface UpdateProductDto {
 export interface ProductSearchCondition extends BaseSearchCondition {
   productId?: string;
   majorCategories?: MajorCategory[];
-  minorCategories?: MinorCategory[];
   woodTypes?: string[];
   storageLocationIds?: string[];
   supplierIds?: string[];
@@ -310,9 +305,6 @@ export function rowToProduct(row: SheetRowData): Product {
   return {
     productId: String(row[C.PRODUCT_ID] ?? ''),
     majorCategory: (row[C.MAJOR_CATEGORY] as MajorCategory) ?? 'その他',
-    minorCategory: row[C.MINOR_CATEGORY]
-      ? (row[C.MINOR_CATEGORY] as MinorCategory)
-      : undefined,
     productName: String(row[C.PRODUCT_NAME] ?? ''),
     woodType: String(row[C.WOOD_TYPE] ?? ''),
     rawSize: {
@@ -373,7 +365,7 @@ export function productToRow(product: Product): SheetRowData {
 
   row[C.PRODUCT_ID] = product.productId;
   row[C.MAJOR_CATEGORY] = product.majorCategory;
-  row[C.MINOR_CATEGORY] = product.minorCategory ?? '';
+  row[C.MINOR_CATEGORY] = '';
   row[C.PRODUCT_NAME] = product.productName;
   row[C.WOOD_TYPE] = product.woodType;
   row[C.RAW_LENGTH] = product.rawSize?.length ?? '';

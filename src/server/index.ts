@@ -17,7 +17,6 @@ import {
   ProcessorRepository,
   StorageLocationRepository,
   MajorCategoryRepository,
-  MinorCategoryRepository,
 } from './repositories/MasterRepository';
 import {
   ProductSearchCondition,
@@ -31,9 +30,8 @@ import {
   CreateProcessorDto,
   CreateStorageLocationDto,
   CreateMajorCategoryDto,
-  CreateMinorCategoryDto,
 } from './types/master';
-import { ConfirmationMethod, PaginationOptions, MAJOR_CATEGORIES, MINOR_CATEGORIES } from './types/common';
+import { ConfirmationMethod, PaginationOptions, MAJOR_CATEGORIES } from './types/common';
 import { setupAllSheets, setupSheetsOnly, clearAllData } from './setupData';
 
 // ==================== 設定 ====================
@@ -460,25 +458,11 @@ function getMajorCategories() {
 }
 
 /**
- * 中分類一覧取得
- */
-function getMinorCategories() {
-  try {
-    const repo = new MinorCategoryRepository(getSpreadsheetId());
-    const result = repo.findAllSorted();
-    return JSON.parse(JSON.stringify(result));
-  } catch (error) {
-    console.error('getMinorCategories error:', error);
-    throw error;
-  }
-}
-
-/**
  * マスターデータ追加
  */
 function addMasterData(
-  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation' | 'majorCategory' | 'minorCategory',
-  data: CreateWoodTypeDto | CreateSupplierDto | CreateProcessorDto | CreateStorageLocationDto | CreateMajorCategoryDto | CreateMinorCategoryDto
+  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation' | 'majorCategory',
+  data: CreateWoodTypeDto | CreateSupplierDto | CreateProcessorDto | CreateStorageLocationDto | CreateMajorCategoryDto
 ) {
   try {
     const spreadsheetId = getSpreadsheetId();
@@ -510,11 +494,6 @@ function addMasterData(
         result = repo.createFromDto(data as CreateMajorCategoryDto);
         break;
       }
-      case 'minorCategory': {
-        const repo = new MinorCategoryRepository(spreadsheetId);
-        result = repo.createFromDto(data as CreateMinorCategoryDto);
-        break;
-      }
       default:
         throw new Error(`Unknown master type: ${type}`);
     }
@@ -529,7 +508,7 @@ function addMasterData(
  * マスターデータ削除
  */
 function deleteMasterData(
-  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation' | 'majorCategory' | 'minorCategory',
+  type: 'woodType' | 'supplier' | 'processor' | 'storageLocation' | 'majorCategory',
   id: string
 ) {
   try {
@@ -554,10 +533,6 @@ function deleteMasterData(
       }
       case 'majorCategory': {
         const repo = new MajorCategoryRepository(spreadsheetId);
-        return repo.delete(id);
-      }
-      case 'minorCategory': {
-        const repo = new MinorCategoryRepository(spreadsheetId);
         return repo.delete(id);
       }
       default:
@@ -785,30 +760,23 @@ function getUniqueCategoryValues() {
     const spreadsheetId = getSpreadsheetId();
     const productService = new ProductService(spreadsheetId);
     const majorCategoryRepo = new MajorCategoryRepository(spreadsheetId);
-    const minorCategoryRepo = new MinorCategoryRepository(spreadsheetId);
 
     // デフォルト候補を初期値として設定
     const majorSet = new Set<string>(MAJOR_CATEGORIES);
-    const minorSet = new Set<string>(MINOR_CATEGORIES);
 
     // 製品データからユニーク値を収集
     const allProducts = productService.searchProducts({}, { page: 1, limit: 10000 });
 
-    allProducts.data.forEach((p: { majorCategory?: string; minorCategory?: string }) => {
+    allProducts.data.forEach((p: { majorCategory?: string }) => {
       if (p.majorCategory) majorSet.add(p.majorCategory);
-      if (p.minorCategory) minorSet.add(p.minorCategory);
     });
 
     // マスターデータからも追加
     const majorMasters = majorCategoryRepo.findAllSorted();
     majorMasters.forEach((m: { name: string }) => majorSet.add(m.name));
 
-    const minorMasters = minorCategoryRepo.findAllSorted();
-    minorMasters.forEach((m: { name: string }) => minorSet.add(m.name));
-
     return {
       majorCategories: Array.from(majorSet).sort(),
-      minorCategories: Array.from(minorSet).sort(),
     };
   } catch (error) {
     console.error('getUniqueCategoryValues error:', error);
@@ -970,7 +938,6 @@ declare const global: {
   getProcessors: typeof getProcessors;
   getStorageLocations: typeof getStorageLocations;
   getMajorCategories: typeof getMajorCategories;
-  getMinorCategories: typeof getMinorCategories;
   addMasterData: typeof addMasterData;
   deleteMasterData: typeof deleteMasterData;
   getUniqueCategoryValues: typeof getUniqueCategoryValues;
@@ -1028,7 +995,6 @@ global.getSuppliers = getSuppliers;
 global.getProcessors = getProcessors;
 global.getStorageLocations = getStorageLocations;
 global.getMajorCategories = getMajorCategories;
-global.getMinorCategories = getMinorCategories;
 global.addMasterData = addMasterData;
 global.deleteMasterData = deleteMasterData;
 global.getUniqueCategoryValues = getUniqueCategoryValues;

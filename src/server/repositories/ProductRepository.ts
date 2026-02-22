@@ -148,14 +148,6 @@ export class ProductRepository extends BaseRepository<Product> {
       results = results.filter((p) => categorySet.has(p.majorCategory));
     }
 
-    // 中分類フィルター
-    if (conditions.minorCategories && conditions.minorCategories.length > 0) {
-      const categorySet = new Set(conditions.minorCategories);
-      results = results.filter(
-        (p) => p.minorCategory && categorySet.has(p.minorCategory)
-      );
-    }
-
     // 樹種フィルター
     if (conditions.woodTypes && conditions.woodTypes.length > 0) {
       const woodTypeSet = new Set(conditions.woodTypes);
@@ -421,7 +413,6 @@ export class ProductRepository extends BaseRepository<Product> {
     const product: Product = {
       productId,
       majorCategory: dto.majorCategory,
-      minorCategory: dto.minorCategory,
       productName: dto.productName,
       woodType: dto.woodType,
       rawSize: dto.rawSize,

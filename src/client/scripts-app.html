@@ -11,7 +11,6 @@ const App = {
     processors: [],
     storageLocations: [],
     majorCategories: [],
-    minorCategories: [],
   },
 
   /**
@@ -158,13 +157,12 @@ const App = {
   async loadMasterData() {
     try {
       // 並列でマスターデータを取得
-      const [woodTypes, suppliers, processors, storageLocations, majorCategories, minorCategories] = await Promise.all([
+      const [woodTypes, suppliers, processors, storageLocations, majorCategories] = await Promise.all([
         Api.getWoodTypes().catch(() => []),
         Api.getSuppliers().catch(() => []),
         Api.getProcessors().catch(() => []),
         Api.getStorageLocations().catch(() => []),
         Api.getMajorCategories().catch(() => []),
-        Api.getMinorCategories().catch(() => []),
       ]);
 
       this.masterData = {
@@ -173,7 +171,6 @@ const App = {
         processors: processors || [],
         storageLocations: storageLocations || [],
         majorCategories: majorCategories || [],
-        minorCategories: minorCategories || [],
       };
 
       console.log('Master data loaded:', this.masterData);
@@ -186,7 +183,6 @@ const App = {
         processors: [],
         storageLocations: [],
         majorCategories: [],
-        minorCategories: [],
       };
       Toast.error('マスターデータの読み込みに失敗しました');
     }
@@ -613,25 +609,18 @@ const ProductForm = {
     App.populateSelect('supplierId', App.masterData.suppliers, 'supplierId', 'name');
     App.populateSelect('storageLocationId', App.masterData.storageLocations, 'storageLocationId', 'name');
 
-    // 大分類・中分類のサジェスト入力を初期化（デフォルト候補＋マスターデータ）
+    // 大分類のサジェスト入力を初期化（デフォルト候補＋マスターデータ）
     var defaultMajor = ['テーブル', 'カウンター', 'スツール', '足', 'その他'];
-    var defaultMinor = ['家具', '雑貨', '加工材料', 'その他'];
     var majorFromMaster = App.masterData.majorCategories.map(function(c) { return c.name; });
-    var minorFromMaster = App.masterData.minorCategories.map(function(c) { return c.name; });
     // デフォルト候補とマスターデータをマージ（重複排除）
     var majorSuggestions = defaultMajor.concat(majorFromMaster.filter(function(v) { return defaultMajor.indexOf(v) === -1; }));
-    var minorSuggestions = defaultMinor.concat(minorFromMaster.filter(function(v) { return defaultMinor.indexOf(v) === -1; }));
     SuggestInput.init('majorCategory', 'majorCategorySuggest', majorSuggestions);
-    SuggestInput.init('minorCategory', 'minorCategorySuggest', minorSuggestions);
 
     // カテゴリのユニーク値を非同期で取得してサジェスト候補を更新
     Api.getUniqueCategoryValues().then(function(result) {
       if (result) {
         if (result.majorCategories) {
           SuggestInput.updateSuggestions('majorCategory', result.majorCategories);
-        }
-        if (result.minorCategories) {
-          SuggestInput.updateSuggestions('minorCategory', result.minorCategories);
         }
       }
     }).catch(function(e) {
@@ -704,7 +693,6 @@ const ProductForm = {
 
       // フォームにデータを設定
       document.getElementById('majorCategory').value = product.majorCategory || '';
-      document.getElementById('minorCategory').value = product.minorCategory || '';
       document.getElementById('productName').value = product.productName || '';
       document.getElementById('woodType').value = product.woodType || '';
       document.getElementById('storageLocationId').value = product.storageLocationId || '';
@@ -1110,7 +1098,6 @@ const ProductForm = {
     // フォームデータを収集
     return {
       majorCategory: document.getElementById('majorCategory').value,
-      minorCategory: document.getElementById('minorCategory').value || undefined,
       productName: document.getElementById('productName').value.trim(),
       woodType: document.getElementById('woodType').value,
       rawSize: rawSize,
@@ -1297,7 +1284,6 @@ const ProductDetail = {
     this.renderPhotoGallery();
 
     document.getElementById('detailMajorCategory').textContent = p.majorCategory || '-';
-    document.getElementById('detailMinorCategory').textContent = p.minorCategory || '-';
     document.getElementById('detailWoodType').textContent = p.woodType || '-';
     document.getElementById('detailStorageLocation').textContent = App.getStorageLocationName(p.storageLocationId || p.storageLocation);
 
@@ -2560,95 +2546,6 @@ const Master = {
     }
   },
 
-  // ==================== 中分類マスター ====================
-
-  renderMinorCategories() {
-    const tbody = document.getElementById('minorCategoriesBody');
-    if (!tbody) return;
-    if (App.masterData.minorCategories.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">データがありません</td></tr>';
-      return;
-    }
-    tbody.innerHTML = App.masterData.minorCategories
-      .map(
-        (item) => `
-      <tr>
-        <td>${Utils.escapeHtml(item.categoryId)}</td>
-        <td>${Utils.escapeHtml(item.name)}</td>
-        <td>${item.displayOrder || '-'}</td>
-        <td>
-          <button class="btn btn-sm btn-secondary" onclick="Master.editMinorCategory('${item.categoryId}')">編集</button>
-          <button class="btn btn-sm btn-danger" onclick="Master.deleteMinorCategory('${item.categoryId}', '${Utils.escapeHtml(item.name)}')">削除</button>
-        </td>
-      </tr>
-    `
-      )
-      .join('');
-  },
-
-  addMinorCategory() {
-    document.getElementById('minorCategoryModalTitle').textContent = '中分類を追加';
-    document.getElementById('minorCategoryEditId').value = '';
-    document.getElementById('minorCategoryName').value = '';
-    document.getElementById('minorCategoryDisplayOrder').value = '';
-    document.getElementById('minorCategoryModal').classList.remove('hidden');
-  },
-
-  editMinorCategory(id) {
-    const item = App.masterData.minorCategories.find(c => c.categoryId === id);
-    if (!item) {
-      Toast.error('中分類が見つかりません');
-      return;
-    }
-    document.getElementById('minorCategoryModalTitle').textContent = '中分類を編集';
-    document.getElementById('minorCategoryEditId').value = id;
-    document.getElementById('minorCategoryName').value = item.name || '';
-    document.getElementById('minorCategoryDisplayOrder').value = item.displayOrder || '';
-    document.getElementById('minorCategoryModal').classList.remove('hidden');
-  },
-
-  closeMinorCategoryModal() {
-    document.getElementById('minorCategoryModal').classList.add('hidden');
-  },
-
-  async submitMinorCategory() {
-    const editId = document.getElementById('minorCategoryEditId').value;
-    const name = document.getElementById('minorCategoryName').value.trim();
-    const displayOrder = document.getElementById('minorCategoryDisplayOrder').value;
-
-    if (!name) {
-      Toast.warning('カテゴリ名を入力してください');
-      return;
-    }
-
-    try {
-      const data = {
-        name: name,
-        displayOrder: displayOrder ? parseInt(displayOrder) : undefined,
-      };
-
-      await Api.addMasterData('minorCategory', data);
-      Toast.success(editId ? '中分類を更新しました' : '中分類を追加しました');
-      this.closeMinorCategoryModal();
-      await this.loadAllMasters();
-    } catch (error) {
-      console.error('Failed to save minor category:', error);
-      Toast.error('保存に失敗しました');
-    }
-  },
-
-  async deleteMinorCategory(id, name) {
-    if (!confirm(`中分類「${name}」を削除しますか？`)) return;
-
-    try {
-      await Api.deleteMasterData('minorCategory', id);
-      Toast.success('中分類を削除しました');
-      await this.loadAllMasters();
-    } catch (error) {
-      console.error('Failed to delete minor category:', error);
-      Toast.error('削除に失敗しました');
-    }
-  },
 };
 
 /**

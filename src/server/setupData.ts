@@ -139,7 +139,6 @@ function daysAgo(days: number): Date {
 function generateProducts(): unknown[][] {
   const products: unknown[][] = [];
   const categories = ['テーブル', 'カウンター', 'スツール', '足', 'その他'];
-  const minorCategories = ['家具', '雑貨', '加工材料', 'その他'];
   const statuses = ['販売中', '販売中', '販売中', '販売済み', '棚卸し中', '削除済み'];
   const woodTypeIds = WOOD_TYPES_DATA.map(w => w[0] as string);
   const supplierIds = SUPPLIERS_DATA.map(s => s[0] as string);
@@ -196,7 +195,7 @@ function generateProducts(): unknown[][] {
     const row = [
       productId,
       randomChoice(categories),
-      randomChoice(minorCategories),
+      '',
       `${randomChoice(['銘木', '天然', '無垢'])} ${randomChoice(['ダイニング', 'センター', 'ワーク', 'カウンター'])}テーブル ${i}号`,
       randomChoice(woodTypeIds),
       rawLength,

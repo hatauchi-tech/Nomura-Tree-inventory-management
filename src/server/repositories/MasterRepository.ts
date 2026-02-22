@@ -15,27 +15,22 @@ import {
   PROCESSOR_HEADERS,
   STORAGE_LOCATION_HEADERS,
   MAJOR_CATEGORY_HEADERS,
-  MINOR_CATEGORY_HEADERS,
   rowToWoodType,
   rowToSupplier,
   rowToProcessor,
   rowToStorageLocation,
   rowToMajorCategory,
-  rowToMinorCategory,
   woodTypeToRow,
   supplierToRow,
   processorToRow,
   storageLocationToRow,
   majorCategoryToRow,
-  minorCategoryToRow,
   CreateWoodTypeDto,
   CreateSupplierDto,
   CreateProcessorDto,
   CreateStorageLocationDto,
   MajorCategoryMaster,
-  MinorCategoryMaster,
   CreateMajorCategoryDto,
-  CreateMinorCategoryDto,
 } from '../types/master';
 
 // ==================== 樹種リポジトリ ====================
@@ -373,68 +368,3 @@ export class MajorCategoryRepository extends BaseRepository<MajorCategoryMaster>
   }
 }
 
-// ==================== 中分類リポジトリ ====================
-
-export class MinorCategoryRepository extends BaseRepository<MinorCategoryMaster> {
-  constructor(spreadsheetId: string) {
-    const config: RepositoryConfig = {
-      spreadsheetId,
-      sheetName: SHEET_NAMES.MINOR_CATEGORIES_MASTER,
-      headers: MINOR_CATEGORY_HEADERS,
-    };
-    super(config);
-  }
-
-  protected rowToEntity(row: unknown[]): MinorCategoryMaster {
-    return rowToMinorCategory(row as SheetRowData);
-  }
-
-  protected entityToRow(entity: MinorCategoryMaster): unknown[] {
-    return minorCategoryToRow(entity);
-  }
-
-  protected getIdColumnIndex(): number {
-    return 0; // categoryId
-  }
-
-  /**
-   * 名前で検索
-   */
-  findByName(name: string): MinorCategoryMaster | null {
-    const found = this.findWhere((c) => c.name === name);
-    return found.length > 0 ? found[0] : null;
-  }
-
-  /**
-   * 表示順でソートして取得
-   */
-  findAllSorted(): MinorCategoryMaster[] {
-    return this.findAll().sort((a, b) => a.displayOrder - b.displayOrder);
-  }
-
-  /**
-   * 新規登録
-   */
-  createFromDto(dto: CreateMinorCategoryDto): MinorCategoryMaster {
-    const existingIds = this.findAll().map((c) => c.categoryId);
-    const nextNum = existingIds.length + 1;
-    const categoryId = `SCAT-${String(nextNum).padStart(4, '0')}`;
-
-    const category: MinorCategoryMaster = {
-      categoryId,
-      name: dto.name,
-      displayOrder: dto.displayOrder ?? nextNum,
-    };
-
-    return this.create(category);
-  }
-
-  /**
-   * 名前の重複チェック
-   */
-  isNameExists(name: string, excludeId?: string): boolean {
-    return this.findAll().some(
-      (c) => c.name === name && c.categoryId !== excludeId
-    );
-  }
-}
