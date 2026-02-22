@@ -3400,10 +3400,27 @@ function generateProductPdf(productId) {
     }
 }
 /**
+ * Drive画像をBase64データURIに変換
+ */
+function driveImageToBase64(url) {
+    try {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (!match)
+            return null;
+        const file = DriveApp.getFileById(match[1]);
+        const blob = file.getBlob();
+        const base64 = Utilities.base64Encode(blob.getBytes());
+        return 'data:' + blob.getContentType() + ';base64,' + base64;
+    }
+    catch (e) {
+        console.error('driveImageToBase64 error:', e);
+        return null;
+    }
+}
+/**
  * カタログPDF生成（複数製品→1つのPDF）
  */
 function generateCatalogPdf(productIds) {
-    var _a, _b, _c, _d, _e, _f, _g;
     try {
         if (!productIds || productIds.length === 0) {
             throw new Error('製品IDが指定されていません');
@@ -3413,6 +3430,7 @@ function generateCatalogPdf(productIds) {
         }
         const spreadsheetId = getSpreadsheetId();
         const service = new ProductService_1.ProductService(spreadsheetId);
+        const dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy.M.d');
         let pagesHtml = '';
         for (let i = 0; i < productIds.length; i++) {
             const product = service.getProductDetail(productIds[i]);
@@ -3423,40 +3441,42 @@ function generateCatalogPdf(productIds) {
                 ? JSON.parse(product.rawPhotoUrls) : (product.rawPhotoUrls ? [product.rawPhotoUrls] : []);
             const finishedPhotos = product.finishedPhotoUrls && product.finishedPhotoUrls.startsWith('[')
                 ? JSON.parse(product.finishedPhotoUrls) : (product.finishedPhotoUrls ? [product.finishedPhotoUrls] : []);
-            // サイズ文字列
-            const rawSize = [(_a = product.rawSize) === null || _a === void 0 ? void 0 : _a.length, (_b = product.rawSize) === null || _b === void 0 ? void 0 : _b.width, (_c = product.rawSize) === null || _c === void 0 ? void 0 : _c.thickness]
-                .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
-            const finishedSize = [(_d = product.finishedSize) === null || _d === void 0 ? void 0 : _d.length, (_e = product.finishedSize) === null || _e === void 0 ? void 0 : _e.width, (_f = product.finishedSize) === null || _f === void 0 ? void 0 : _f.thickness]
-                .filter(v => v).map(v => v + 'mm').join(' × ') || '-';
-            // 販売価格
-            const priceIncTax = ((_g = product.calculated) === null || _g === void 0 ? void 0 : _g.sellingPriceIncTax)
-                ? '¥' + Math.round(product.calculated.sellingPriceIncTax).toLocaleString()
-                : '-';
-            // 写真HTML（最大3枚）
-            let photoHtml = '';
-            const allPhotos = rawPhotos.concat(finishedPhotos).slice(0, 3);
-            for (const url of allPhotos) {
-                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                if (match) {
-                    photoHtml += '<img src="https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w300" style="max-width:200px;max-height:150px;margin:4px;border-radius:4px;">';
+            // サイズ文字列（仕上げ後を優先、なければ入荷時）
+            const fSize = product.finishedSize;
+            const rSize = product.rawSize;
+            const sizeArr = fSize && (fSize.length || fSize.width || fSize.thickness)
+                ? [fSize.length, fSize.width, fSize.thickness]
+                : (rSize ? [rSize.length, rSize.width, rSize.thickness] : []);
+            const sizeStr = sizeArr.filter(v => v).map(v => v + 'mm').join('×') || '';
+            // メイン写真をBase64埋め込み（仕上げ後写真を優先、なければ入荷時写真）
+            const photoUrls = finishedPhotos.length > 0 ? finishedPhotos : rawPhotos;
+            let mainPhotoHtml = '';
+            if (photoUrls.length > 0) {
+                const dataUri = driveImageToBase64(photoUrls[0]);
+                if (dataUri) {
+                    mainPhotoHtml = '<img src="' + dataUri + '" style="max-width:100%; max-height:580px; display:block; margin:0 auto; border-radius:4px;">';
                 }
             }
+            // 製品番号 + 樹種の表示名
+            const displayName = escapeHtmlForPdf(product.productId) + '　' + escapeHtmlForPdf(product.woodType || product.productName);
             const pageBreak = i > 0 ? 'page-break-before: always;' : '';
             pagesHtml += `
-        <div style="${pageBreak} padding: 20px 0;">
-          <h2 style="font-size:20px; color:#2c5530; border-bottom:2px solid #2c5530; padding-bottom:6px;">
-            ${escapeHtmlForPdf(product.productName)}
-          </h2>
-          <p style="color:#888; font-size:11px; margin:4px 0 12px;">${escapeHtmlForPdf(product.productId)}</p>
-          ${photoHtml ? '<div style="margin:12px 0;">' + photoHtml + '</div>' : ''}
-          <table style="width:100%; border-collapse:collapse; margin-bottom:12px;">
-            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; width:120px; font-size:12px;">大分類</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(product.majorCategory || '-')}</td></tr>
-            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">樹種</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(product.woodType || '-')}</td></tr>
-            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">入荷時サイズ</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(rawSize)}</td></tr>
-            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">仕上げ後サイズ</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:12px;">${escapeHtmlForPdf(finishedSize)}</td></tr>
-            <tr><td style="padding:5px 10px; border-bottom:1px solid #eee; color:#666; font-size:12px;">販売価格(税込)</td><td style="padding:5px 10px; border-bottom:1px solid #eee; font-size:16px; font-weight:700; color:#2c5530;">${escapeHtmlForPdf(priceIncTax)}</td></tr>
-          </table>
-          ${product.remarks ? '<p style="font-size:11px; color:#666;">' + escapeHtmlForPdf(product.remarks) + '</p>' : ''}
+        <div style="${pageBreak} position:relative; padding:30px 0 0;">
+          <div style="text-align:right; font-size:12px; color:#333; margin-bottom:30px;">
+            ${escapeHtmlForPdf(dateStr)}
+          </div>
+          <div style="text-align:center; margin-bottom:20px;">
+            <h2 style="font-size:26px; font-weight:700; color:#333; text-decoration:underline; margin:0 0 10px;">
+              ${displayName}
+            </h2>
+            ${sizeStr ? '<p style="font-size:16px; color:#333; margin:0;">サイズ：' + escapeHtmlForPdf(sizeStr) + '</p>' : ''}
+          </div>
+          <div style="text-align:center; margin:20px 0;">
+            ${mainPhotoHtml || '<p style="color:#999; font-size:14px;">写真なし</p>'}
+          </div>
+          <div style="text-align:center; margin-top:30px; padding-top:10px;">
+            <span style="font-size:14px; color:#2c5530; font-weight:700; border:1px solid #2c5530; padding:6px 16px;">野村 木の物語工房</span>
+          </div>
         </div>
       `;
         }
@@ -3469,18 +3489,12 @@ function generateCatalogPdf(productIds) {
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: 'Noto Sans JP', sans-serif; margin: 30px; color: #333; }
+          body { font-family: 'Noto Sans JP', sans-serif; margin: 40px 50px; color: #333; }
+          @page { margin: 20mm; }
         </style>
       </head>
       <body>
-        <div style="text-align:center; margin-bottom:20px;">
-          <h1 style="font-size:22px; color:#2c5530;">製品カタログ</h1>
-          <p style="font-size:11px; color:#888;">${new Date().toLocaleDateString('ja-JP')} 作成 / ${productIds.length}製品</p>
-        </div>
         ${pagesHtml}
-        <div style="margin-top:30px; font-size:10px; color:#aaa; text-align:center;">
-          野村木材 在庫管理システム
-        </div>
       </body>
       </html>
     `;
